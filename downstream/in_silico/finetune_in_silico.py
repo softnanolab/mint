@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 from tqdm import tqdm
-#from tqdm.notebook import tqdm
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.Polypeptide import one_to_index
 from Bio.PDB import Selection
@@ -18,7 +17,6 @@ from Bio import SeqIO
 from Bio.PDB.Residue import Residue
 from easydict import EasyDict
 import enum
-sys.path.append('/data/cb/scratch/varun/esm-multimer/esm-multimer/')
 import esm, gzip
 from Bio import SeqIO
 from esm.model.esm2 import ESM2
@@ -315,22 +313,6 @@ def train(model, train_loader, val_loader, cfg, args):
 def main(args):
 
     for train_test_split in [0.005, 0.02, 0.2]:
-        if args.wandb:
-            os.environ["WANDB_CONFIG_DIR"] = "./"
-            os.environ["WANDB_CACHE_DIR"] = "./"
-            os.environ["WANDB_DIR"] = "./"
-            os.environ["WANDB_ARTIFACT_DIR"] = "./"
-            os.environ["WANDB_DATA_DIR"] = "./"
-            os.environ["WANDB_ARTIFACT_LOCATION"] = "./"
-            wandb.login(key=args.wandb_key)
-            wandb.init(
-                entity='bergerlab-mit',
-                project="esm-multimer-specific",
-                config=args,
-                group="Desautels",
-                job_type=os.path.basename(args.checkpoint_path),
-                tags=[f"split_{train_test_split}"]
-            )
 
         train_dataset = DesautelsDataset('Desautels_insilico_data.csv', train_test_split=train_test_split)
         test_dataset = DesautelsDataset('Desautels_insilico_data.csv', train_test_split=train_test_split, split='test')

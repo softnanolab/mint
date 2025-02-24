@@ -10,6 +10,7 @@ dependencies:
   - pip=24.0
   - cudatoolkit=11.3.1
   - biopython=1.79
+  - einops=0.7.0
   - fairscale=0.4.3
   - hhsuite=3.3.0
   - hmmer=3.3.2

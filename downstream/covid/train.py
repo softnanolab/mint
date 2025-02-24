@@ -226,16 +226,6 @@ def calculate_scores(args):
 
     model = FlabWrapper(cfg, args.checkpoint_path, 1.0, args.use_multimer, args.device)
 
-    os.environ["WANDB_CONFIG_DIR"] = "./"
-    os.environ["WANDB_CACHE_DIR"] = "./"
-    wandb.login(key='ecb8a6f984ef9af94ad2f544b82d7a91adc50dd5')
-    wandb.init(
-        entity='bergerlab-mit',
-        project="esm-multimer-specific",
-        group="covid",
-        job_type=args.name,
-    )
-
     train_df = pd.read_csv('processed_data_train.csv')
     test_df = pd.read_csv('processed_data_test.csv')
 

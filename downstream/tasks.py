@@ -127,41 +127,6 @@ def get_task_datasets(task, test_run=False, return_metadata=False):
         method = 'mlp'
         output_size = 1
         monitor_metric = 'Accuracy'
-    # elif task == 'SpeciesPPI':
-    #     train_fl = './species-ppi/processed_data_train.csv'
-    #     val_fl = './species-ppi/processed_data_val.csv'
-    #     test_fl = './species-ppi/processed_data_test.csv'
-    #     task_type = 'bc'   
-    #     col1 = 'seq1'
-    #     col2 = 'seq2'
-    #     target_col = 'target'
-    #     num_epochs = 100
-    #     method = 'mlp'
-    #     output_size = 1
-    #     monitor_metric = 'AUPRC'
-    # elif task == 'STRING':
-    #     train_fl = 'string/SHS27k/bfs/train_0.csv'
-    #     val_fl = None
-    #     test_fl = 'string/SHS27k/bfs/test_0.csv'
-    #     task_type = 'mc'     
-    #     col1 = 'sequence_1'
-    #     col2 = 'sequence_2'
-    #     target_col = ['reaction', 'binding', 'ptmod', 'activation', 'inhibition', 'catalysis', 'expression']
-    #     num_epochs = 200
-    #     method = 'mlp'
-    #     output_size = 7
-    # elif task == 'FDA':
-    #     train_fl = './fda/processed_data.csv'
-    #     val_fl = './fda/processed_data_val.csv'
-    #     test_fl = './fda/processed_data_test.csv'
-    #     task_type = 'bc'   
-    #     col1 = 'Protein1'
-    #     col2 = 'Protein2'
-    #     target_col = 'Y'
-    #     num_epochs = 100
-    #     method = 'mlp'
-    #     output_size = 1
-    #     monitor_metric = None
     elif task == 'SKEMPI':
         train_fl = './SKEMPI_v2/processed_data.csv'
         val_fl = None
@@ -176,20 +141,6 @@ def get_task_datasets(task, test_run=False, return_metadata=False):
         method = 'pcv'
         output_size = None
         monitor_metric = None
-    # elif task == 'BSA':
-    #     train_fl = './bsa/processed_data.csv'
-    #     val_fl = None
-    #     test_fl = None
-    #     task_type = 'reg'   
-    #     col1 = 'seq1'
-    #     col2 = 'seq2'
-    #     mut_col1 = 'mut_seq1'
-    #     mut_col2 = 'mut_seq2'
-    #     target_col = 'target'
-    #     num_epochs = 20
-    #     method = 'cv'
-    #     output_size = None
-    #     monitor_metric = None
     elif task == 'Bernett':
         train_fl = './ppi/Intra1_seqs.csv'
         val_fl = './ppi/Intra0_seqs.csv'
@@ -202,51 +153,6 @@ def get_task_datasets(task, test_run=False, return_metadata=False):
         method = 'mlp'
         output_size = 1
         monitor_metric = 'AUPRC'
-    # elif task == 'DGEB_cyano':
-    #     train_fl = './dgeb/cyano_pair.csv'
-    #     val_fl = None
-    #     test_fl = None
-    #     task_type = 'bc'   
-    #     col1 = 'seq1'
-    #     col2 = 'seq2'
-    #     target_col = 'Label'
-    #     num_epochs = 20
-    #     method = 'cv'
-    #     output_size = None
-    # elif task == 'DGEB_ecoli':
-    #     train_fl = './dgeb/ecoli_pair.csv'
-    #     val_fl = None
-    #     test_fl = None
-    #     task_type = 'bc'   
-    #     col1 = 'seq1'
-    #     col2 = 'seq2'
-    #     target_col = 'Label'
-    #     num_epochs = 20
-    #     method = 'cv'
-    #     output_size = None
-    # elif task == 'DGEB_vibrio':
-    #     train_fl = './dgeb/vibrio_pair.csv'
-    #     val_fl = None
-    #     test_fl = None
-    #     task_type = 'bc'   
-    #     col1 = 'seq1'
-    #     col2 = 'seq2'
-    #     target_col = 'Label'
-    #     num_epochs = 20
-    #     method = 'cv'
-    #     output_size = None
-    # elif task == 'Pinnacle':
-    #     train_fl = './pinnacle/processed_data_train.csv'
-    #     val_fl = './pinnacle/processed_data_val.csv'
-    #     test_fl = './pinnacle/processed_data_test.csv'
-    #     task_type = 'mc'   
-    #     col1 = 'sequence1'
-    #     col2 = 'sequence2'
-    #     target_col = 'label' 
-    #     num_epochs = 200
-    #     method = 'mlp'
-    #     output_size = 8
-    #     monitor_metric = 'f1'
     elif task == 'Pdb-bind':
         train_fl = './pdb-bind/processed_data.csv'
         val_fl = None

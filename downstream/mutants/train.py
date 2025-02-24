@@ -168,8 +168,7 @@ random_seed = 0
 stop = 0
 while stop==0:
     best_test_f1, best_preds = train_mlp(train_loader, test_loader, 50, 1e-5, 'cuda:6', random_seed)
-    if best_test_f1 > 0.65:
-        all_preds.append(best_preds)
+    all_preds.append(best_preds)
     random_seed = random_seed + 1
     if len(all_preds) == total_stop:
         stop = 1

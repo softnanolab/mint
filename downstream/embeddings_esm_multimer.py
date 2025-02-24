@@ -12,7 +12,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 from easydict import EasyDict
 import enum
-sys.path.append('/data/cb/scratch/varun/esm-multimer/esm-multimer/')
+
 import esm, gzip
 from esm.model.esm2 import ESM2
 from collections import OrderedDict
@@ -363,5 +363,3 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     main(args)  
-
-# python embeddings_esm_multimer.py --task "HumanPPI" --devices "6,7" --checkpoint_path "/data/cb/scratch/varun/esm-multimer/esm-multimer/checkpoints/650M_nofreeze_filtered_continue/epoch=0-step=115000.ckpt"

@@ -18,7 +18,7 @@ from Bio import SeqIO
 from Bio.PDB.Residue import Residue
 from easydict import EasyDict
 import enum
-sys.path.append('/data/cb/scratch/varun/esm-multimer/esm-multimer/')
+
 import esm, gzip
 from Bio import SeqIO
 from esm.model.esm2 import ESM2
@@ -271,18 +271,6 @@ with open(f"/data/cb/scratch/varun/esm-multimer/esm-multimer/models/esm2_t33_650
 def calculate_scores(args):
 
     for split_type in ['RN']:    
-
-        if args.wandb:
-            os.environ["WANDB_CONFIG_DIR"] = "./"
-            os.environ["WANDB_CACHE_DIR"] = "./"
-            wandb.login(key='ecb8a6f984ef9af94ad2f544b82d7a91adc50dd5')
-            wandb.init(
-                entity='bergerlab-mit',
-                project="esm-multimer-specific",
-                group="TDC-tchard",
-                job_type=args.save_name,
-                tags=[split_type, str(args.rep)]
-            )
     
 
         model = FlabWrapper(cfg, args.checkpoint_path, args.freeze_percent, args.use_multimer, args.device)

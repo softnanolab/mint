@@ -51,20 +51,6 @@ def pool(
 logger = logging.getLogger(__name__)
 
 class BioSeqTransformer(ABC):
-    """
-    Abstract class to wrap models which map biological sequences (DNA/Prot) to embeddings.
-    Modelled after SentenceTransformer (https://github.com/UKPLab/sentence-transformers/blob/master/sentence_transformers/SentenceTransformer.py)
-
-    Args:
-        model_name: Name or path to the pretrained model.
-        layers: List of model layers to probe. Can be integers or "mid" or "last".
-        devices: List of device ids for inference. If cuda is not available, will use cpu.
-        num_processes: Number of processes to use for data loading.
-        max_seq_length: Maximum sequence length of the input sequences.
-        l2_norm: If true, embeddings are L2-normalized before they are returned.
-        batch_size: Batch size for encoding.
-        pool_type: Pooling strategy to use. One of "mean", "max", "cls", "last".
-    """
 
     def __init__(
         self,

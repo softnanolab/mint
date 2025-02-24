@@ -71,110 +71,71 @@ with gzip.open('../filtered.links.txt.gz', 'wt') as links_file:
     for link in links:
         links_file.write(link + '\n')
 
-# num_val = 250000
-# validation = links[:num_val]
-# training = links[num_val:]
+num_val = 250000
+validation = links[:num_val]
+training = links[num_val:]
 
-# logger.info("===Writing validation links===")
-# written_seqs = set()
-# with gzip.open('validation.links.txt.gz', 'wt') as links_file:
-#     with gzip.open('validation.seqs.txt.gz', 'wt') as seqs_file:
-#         for link in validation:
-#             links_file.write(link + '\n')
-#             name1, name2 = link.split()[:2]
-#             if name1 not in written_seqs:
-#                 seqs_file.write(name1 + ' ' + seqs[name1] + '\n')
-#                 written_seqs.add(name1)
-#             if name2 not in written_seqs:
-#                 seqs_file.write(name2 + ' ' + seqs[name2] + '\n')
-#                 written_seqs.add(name2)
-# logger.info(f"Done, {num_val} validation links written, {len(written_seqs)} seqs")
+logger.info("===Writing validation links===")
+written_seqs = set()
+with gzip.open('validation.links.txt.gz', 'wt') as links_file:
+    with gzip.open('validation.seqs.txt.gz', 'wt') as seqs_file:
+        for link in validation:
+            links_file.write(link + '\n')
+            name1, name2 = link.split()[:2]
+            if name1 not in written_seqs:
+                seqs_file.write(name1 + ' ' + seqs[name1] + '\n')
+                written_seqs.add(name1)
+            if name2 not in written_seqs:
+                seqs_file.write(name2 + ' ' + seqs[name2] + '\n')
+                written_seqs.add(name2)
+logger.info(f"Done, {num_val} validation links written, {len(written_seqs)} seqs")
 
-# logger.info("===Writing training links===")
-# i=0
-# written_seqs = set()
-# with gzip.open('/data/cb/scratch/bjing/training.links.txt.gz', 'wt') as links_file:
-#     with gzip.open('/data/cb/scratch/bjing/training.seqs.txt.gz', 'wt') as seqs_file:
-#         for link in training:
-#             i+=1
-#             links_file.write(link + '\n')
-#             name1, name2 = link.split()[:2]
-#             if name1 not in written_seqs:
-#                 seqs_file.write(name1 + ' ' + seqs[name1] + '\n')
-#                 written_seqs.add(name1)
-#             if name2 not in written_seqs:
-#                 seqs_file.write(name2 + ' ' + seqs[name2] + '\n')
-#                 written_seqs.add(name2)
-#             if i % 1000000 == 0:
-#                 logger.info(f"{i / 1e6} million training links written, {len(written_seqs) / 1e6} million seqs")
-# logger.info(f"Done, {i} training links written, {len(written_seqs)} seqs")
+logger.info("===Writing training links===")
+i=0
+written_seqs = set()
+with gzip.open('training.links.txt.gz', 'wt') as links_file:
+    with gzip.open('training.seqs.txt.gz', 'wt') as seqs_file:
+        for link in training:
+            i+=1
+            links_file.write(link + '\n')
+            name1, name2 = link.split()[:2]
+            if name1 not in written_seqs:
+                seqs_file.write(name1 + ' ' + seqs[name1] + '\n')
+                written_seqs.add(name1)
+            if name2 not in written_seqs:
+                seqs_file.write(name2 + ' ' + seqs[name2] + '\n')
+                written_seqs.add(name2)
+            if i % 1000000 == 0:
+                logger.info(f"{i / 1e6} million training links written, {len(written_seqs) / 1e6} million seqs")
+logger.info(f"Done, {i} training links written, {len(written_seqs)} seqs")
 
-# logger.info("===Extracting validation clusters===")
-# val_clus = []
-# for link in validation:
-#     name1, name2 = link.split()[:2]
-#     val_clus.append(reps[name1])
-#     val_clus.append(reps[name2])
-# val_clus = set(val_clus)
-# logger.info(f"Done, {len(val_clus)} validation clusters")
+logger.info("===Extracting validation clusters===")
+val_clus = []
+for link in validation:
+    name1, name2 = link.split()[:2]
+    val_clus.append(reps[name1])
+    val_clus.append(reps[name2])
+val_clus = set(val_clus)
+logger.info(f"Done, {len(val_clus)} validation clusters")
 
-# i, j = 0, 0
-# logger.info("===Writing filtered training links===")
-# written_seqs = set()
-# with gzip.open('/data/cb/scratch/bjing/training_filtered.links.txt.gz', 'wt') as links_file:
-#     with gzip.open('/data/cb/scratch/bjing/training_filtered.seqs.txt.gz', 'wt') as seqs_file:
-#         for link in training:
-#             i += 1
-#             name1, name2 = link.split()[:2]
-#             clu1, clu2 = reps[name1], reps[name2]
-#             if clu1 not in val_clus and clu2 not in val_clus:
-#                 j += 1
-#                 links_file.write(link + '\n')
-#                 if name1 not in written_seqs:
-#                     seqs_file.write(name1 + ' ' + seqs[name1] + '\n')
-#                     written_seqs.add(name1)
-#                 if name2 not in written_seqs:
-#                     seqs_file.write(name2 + ' ' + seqs[name2] + '\n')
-#                     written_seqs.add(name2)
-#             if i % 1000000 == 0:
-#                 logger.info(f"{i / 1e6} million training links filtered, {j / 1e6} million written, {len(written_seqs) / 1e6} million seqs")
-# logger.info(f"{i} training links filtered, {j} kept, {len(written_seqs)} seqs")
-
-
-# # names = set(names)
-# # records = []
-# # f = SeqIO.parse(open('/local/protein.sequences.v12.0.fa'), 'fasta')
-# # for seq in f:
-# #     if seq.name in names:
-# #         records.append(seq)
-# #     if len(records) == 100:
-# #         break
-
-# # with open("validation.fa", "w") as f:
-# #     SeqIO.write(records, f, "fasta")       
-
-# exit()
-# ############# make string23.db ##############
-# f = gzip.open('protein.physical.links.full.v12.0.txt.gz')
-# f = iter(f)
-# next(f) # skip first line
-
-# links = []
-# while True:
-#     line = next(f).strip()
-#     if '23' not in line: break
-#     links.append(line)
-
-# f = SeqIO.parse(open('/local/protein.sequences.v12.0.fa'),'fasta')
-# f = iter(f)
-# seqs = {}
-# while True:
-#     seq = next(f)
-#     if '23' not in seq.name: break
-#     seqs[seq.name] = str(seq.seq)
-
-# random.shuffle(links)
-# with open('string23.db', 'w') as f:
-#     for link in links:
-#         name1, name2 = link.split()[:2]
-#         f.write(' '.join((link, seqs[name1], seqs[name2])) + '\n')
+i, j = 0, 0
+logger.info("===Writing filtered training links===")
+written_seqs = set()
+with gzip.open('training_filtered.links.txt.gz', 'wt') as links_file:
+    with gzip.open('training_filtered.seqs.txt.gz', 'wt') as seqs_file:
+        for link in training:
+            i += 1
+            name1, name2 = link.split()[:2]
+            clu1, clu2 = reps[name1], reps[name2]
+            if clu1 not in val_clus and clu2 not in val_clus:
+                j += 1
+                links_file.write(link + '\n')
+                if name1 not in written_seqs:
+                    seqs_file.write(name1 + ' ' + seqs[name1] + '\n')
+                    written_seqs.add(name1)
+                if name2 not in written_seqs:
+                    seqs_file.write(name2 + ' ' + seqs[name2] + '\n')
+                    written_seqs.add(name2)
+            if i % 1000000 == 0:
+                logger.info(f"{i / 1e6} million training links filtered, {j / 1e6} million written, {len(written_seqs) / 1e6} million seqs")
+logger.info(f"{i} training links filtered, {j} kept, {len(written_seqs)} seqs")

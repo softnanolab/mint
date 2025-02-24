@@ -394,15 +394,6 @@ def main(args):
             print(f'No {args.task} embeddings file found for {model_name}')
             continue
 
-        os.environ["WANDB_CONFIG_DIR"] = "./"
-        os.environ["WANDB_CACHE_DIR"] = "./"
-        wandb.login(key='ecb8a6f984ef9af94ad2f544b82d7a91adc50dd5')
-        wandb.init(
-            entity='bergerlab-mit',
-            project="esm-multimer-downstream-general",
-            group=args.task,
-            job_type=model_name,
-        )
 
         input_size = train_embs.shape[-1]
 
