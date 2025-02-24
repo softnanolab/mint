@@ -18,11 +18,9 @@ from Bio import SeqIO
 from Bio.PDB.Residue import Residue
 from easydict import EasyDict
 import enum
-sys.path.append('/data/cb/scratch/varun/esm-multimer/esm-multimer/')
+
 import esm, gzip
-from Bio import SeqIO
 from esm.model.esm2 import ESM2
-from esm.model.esm1 import ProteinBertModel
 from collections import OrderedDict
 
 import numpy as np
