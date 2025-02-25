@@ -5,10 +5,16 @@ import argparse, json
 import torch
 from torch import nn
 
-import esm
-from esm.model.esm2 import ESM2
+import plm_multimer
+from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
 from torch.utils.data import Dataset
+
+def load_config(path):
+    cfg = argparse.Namespace()
+    with open(path) as f:
+        cfg.__dict__.update(json.load(f))
+    return cfg
 
 class CSVDataset(Dataset):
     def __init__(
@@ -30,7 +36,7 @@ class CSVDataset(Dataset):
 
 class CollateFn:
     def __init__(self, truncation_seq_length=None):
-        self.alphabet = esm.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
         #self.batch_converter = alphabet.get_batch_converter(truncation_seq_length)
     def __call__(self, batches):
@@ -61,8 +67,8 @@ class CollateFn:
             tokens[i,:len(seq_encoded)] = seq
         return tokens
 
-class ESMMultimerWrapper(nn.Module):
-    def __init__(self, cfg, checkpoint_path, freeze_percent=1.0, use_multimer=True, sep_chains=, device='cuda:0'):
+class PLMMultimerWrapper(nn.Module):
+    def __init__(self, cfg, checkpoint_path, freeze_percent=1.0, use_multimer=True, sep_chains=False, device='cuda:0'):
         super().__init__()
         self.cfg = cfg
         self.sep_chains = sep_chains
@@ -89,6 +95,7 @@ class ESMMultimerWrapper(nn.Module):
                 layer_num = name.split('.')[1]
                 if int(layer_num) <= math.floor(total_layers*freeze_percent):
                     param.requires_grad = False
+        self.model.to(device)
 
     def get_one_chain(self, chain_out, mask_expanded, mask):
         masked_chain_out = chain_out * mask_expanded

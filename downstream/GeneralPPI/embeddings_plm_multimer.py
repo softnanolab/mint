@@ -13,8 +13,8 @@ from tqdm import tqdm
 from easydict import EasyDict
 import enum
 
-import esm, gzip
-from esm.model.esm2 import ESM2
+import plm_multimer, gzip
+from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
 from tasks import get_task_datasets
 
@@ -22,7 +22,7 @@ CONFIG_DICT_PATH = '/data/cb/scratch/varun/esm-multimer/esm-multimer/models/esm2
 
 class PPICollateFn:
     def __init__(self, truncation_seq_length=None):
-        self.alphabet = esm.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
@@ -57,7 +57,7 @@ class PPICollateFn:
 
 class MutationalPPICollateFn:
     def __init__(self, truncation_seq_length=None):
-        self.alphabet = esm.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
@@ -113,7 +113,7 @@ def get_sequences_by_chain(chain_ids, amino_acids):
 
 class PDBBindCollateFn:
     def __init__(self, max_length=1024):
-        self.alphabet = esm.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
         self.max_length = max_length
 
     def __call__(self, batches):

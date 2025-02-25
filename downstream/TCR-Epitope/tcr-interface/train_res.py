@@ -18,9 +18,9 @@ from pytorch_lightning.loggers import WandbLogger
 from torch.optim.lr_scheduler import StepLR
 from easydict import EasyDict
 import enum
-import esm, gzip
+import plm_multimer, gzip
 from Bio import SeqIO
-from esm.model.esm2 import ESM2
+from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
 from sklearn.metrics import mean_squared_error
 import scipy.stats
@@ -198,7 +198,7 @@ def upgrade_state_dict(state_dict):
 class PPICollateFn:
     
     def __init__(self, truncation_seq_length=None):
-        self.alphabet = esm.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):

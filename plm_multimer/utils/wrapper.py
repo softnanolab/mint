@@ -1,13 +1,13 @@
-import torch, yaml, glob, argparse, esm, re, time, os, json, wandb
+import torch, yaml, glob, argparse, plm_multimer, re, time, os, json, wandb
 from collections import defaultdict
-from esm.model.esm2 import ESM2
+from plm_multimer.model.esm2 import ESM2
 #import pytorch_lightning as pl
 import lightning as pl
 import numpy as np
 import pandas as pd
 #from openfold.utils.exponential_moving_average import ExponentialMovingAverage
 
-from esm.utils.logging import get_logger
+from plm_multimer.utils.logging import get_logger
 logger = get_logger(__name__)
 
 def gather_log(log, world_size):

@@ -19,8 +19,8 @@ from Bio.PDB.Residue import Residue
 from easydict import EasyDict
 import enum
 
-import esm, gzip
-from esm.model.esm2 import ESM2
+import plm_multimer, gzip
+from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
 
 import numpy as np
@@ -74,7 +74,7 @@ class FlabDataset(Dataset):
 class DesautelsCollateFn:
     
     def __init__(self, truncation_seq_length=None, cat_chains=True):
-        self.alphabet = esm.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
         self.cat_chains = cat_chains
 

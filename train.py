@@ -1,13 +1,13 @@
-from esm.utils.parsing import parse_train_args
+from plm_multimer.utils.parsing import parse_train_args
 
 args = parse_train_args()
 
-import torch, yaml, glob, argparse, esm, re, time, os, tqdm, wandb, json
+import torch, yaml, glob, argparse, plm_multimer, re, time, os, tqdm, wandb, json
 from collections import defaultdict
-from esm.model.esm2 import ESM2
+from plm_multimer.model.esm2 import ESM2
 
-from esm.utils.wrapper import ESMWrapper
-from esm.utils.dataset import STRINGDataset, CollateFn
+from plm_multimer.utils.wrapper import ESMWrapper
+from plm_multimer.utils.dataset import STRINGDataset, CollateFn
 
 import lightning as pl
 from lightning.pytorch.callbacks import ModelCheckpoint
