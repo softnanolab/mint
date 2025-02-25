@@ -376,7 +376,7 @@ def main(args):
                       'progen2-large',
                       'prot_t5_xl_uniref50',
                       'prot_t5_xl_bfd',
-                      'esm-m-f-140'
+                      'plm-multimer'
                      ]
     else:
         model_list = [args.model]

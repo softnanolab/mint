@@ -18,6 +18,7 @@ from esm.model.esm2 import ESM2
 from collections import OrderedDict
 from tasks import get_task_datasets
 
+CONFIG_DICT_PATH = '/data/cb/scratch/varun/esm-multimer/esm-multimer/models/esm2_t33_650M_UR50D.json'
 
 class PPICollateFn:
     def __init__(self, truncation_seq_length=None):
@@ -156,7 +157,6 @@ class PDBBindCollateFn:
         return tokens, chain_ids
 
 def upgrade_state_dict(state_dict):
-    """Removes prefixes 'model.encoder.sentence_encoder.' and 'model.encoder.'."""
     prefixes = ["encoder.sentence_encoder.", "encoder."]
     pattern = re.compile("^" + "|".join(prefixes))
     state_dict = {pattern.sub("", name): param for name, param in state_dict.items()}
@@ -272,7 +272,7 @@ def get_embeddings_two(model, loader, device, cat):
 
 
 cfg = argparse.Namespace()
-with open(f"/data/cb/scratch/varun/esm-multimer/esm-multimer/models/esm2_t33_650M_UR50D.json") as f:
+with open(CONFIG_DICT_PATH) as f:
     cfg.__dict__.update(json.load(f))
 
 def main(args):
@@ -352,7 +352,7 @@ if __name__ == "__main__":
     
     # General args
     parser.add_argument('--task', type=str, default='HumanPPI')
-    parser.add_argument('--model_name', type=str, default='esm-multimer')
+    parser.add_argument('--model_name', type=str, default='plm-multimer')
     parser.add_argument('--bs', type=int, default=4)
     parser.add_argument('--max_seq_length', type=int, default=2048)
     parser.add_argument('--devices', type=str, default='0')
