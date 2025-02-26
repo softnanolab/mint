@@ -1,8 +1,6 @@
-import os,sys,re
+import re
 import argparse, json
-import copy
 import random
-import pickle
 import math
 import torch
 from torch import nn
@@ -11,24 +9,16 @@ import pandas as pd
 from torch.utils.data import Dataset
 from tqdm import tqdm
 #from tqdm.notebook import tqdm
-from Bio.PDB.PDBParser import PDBParser
-from Bio.PDB.Polypeptide import one_to_index
-from Bio.PDB import Selection
-from Bio import SeqIO
-from Bio.PDB.Residue import Residue
-from easydict import EasyDict
-import enum
 
-import plm_multimer, gzip
+import plm_multimer
 from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold, GridSearchCV, PredefinedSplit
+from sklearn.model_selection import GridSearchCV
 
-from sklearn.metrics import r2_score, mean_squared_error, accuracy_score, f1_score, roc_auc_score, precision_recall_curve, auc
-from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, precision_recall_curve, auc
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 import warnings
@@ -79,7 +69,7 @@ class DesautelsCollateFn:
         self.cat_chains = cat_chains
 
     def __call__(self, batches):
-        batch_size = len(batches)
+        len(batches)
 
         batch_inputs = list(zip(*batches))
         
@@ -246,7 +236,6 @@ def calculate_scores(args):
     train_embeddings, test_embeddings = convert_train_test_features(train_embeddings, test_embeddings)
     
     verbose = 10
-    n_jobs = -1
     model = MLPClassifier()
     param_grid = {
             "activation": ["relu"],

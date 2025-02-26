@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 
 import plm_multimer
-from plm_multimer.modules import ContactPredictionHead, ESM1bLayerNorm, RobertaLMHead, TransformerLayer
+from plm_multimer.modules import ESM1bLayerNorm, RobertaLMHead, TransformerLayer
 
 
 class ESM2(nn.Module):

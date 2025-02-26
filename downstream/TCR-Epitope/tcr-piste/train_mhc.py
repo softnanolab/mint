@@ -1,8 +1,7 @@
-import os,sys,re
+import os
+import re
 import argparse, json
-import copy
 import random
-import pickle
 import math
 import torch
 from torch import nn
@@ -11,28 +10,13 @@ import pandas as pd
 from torch.utils.data import Dataset, WeightedRandomSampler
 from tqdm import tqdm
 #from tqdm.notebook import tqdm
-from Bio.PDB.PDBParser import PDBParser
-from Bio.PDB.Polypeptide import one_to_index
-from Bio.PDB import Selection
-from Bio import SeqIO
-from Bio.PDB.Residue import Residue
-from easydict import EasyDict
-import enum
 
-import plm_multimer, gzip
-from Bio import SeqIO
+import plm_multimer
 from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
-from sklearn.metrics import mean_squared_error
-import scipy.stats
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold, GridSearchCV, PredefinedSplit
-from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.linear_model import Ridge, LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import PowerTransformer
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, precision_recall_curve, auc
 
 import warnings
@@ -71,7 +55,7 @@ class PPICollateFn:
         self.use_mhc = use_mhc
 
     def __call__(self, batches):
-        batch_size = len(batches)
+        len(batches)
         ab_chain, ag_chain, mhc_chain, labels = zip(*batches)
 
         if self.use_mhc:
@@ -238,7 +222,6 @@ def train(model, train_loader, val_loader, test_loader, test_loader_2, cfg, args
     for epoch in range(args.num_epochs):
         print(f'Training at epoch {epoch}')
         loss_accum = 0
-        best_pearson = 0
         for step, train_batch in enumerate(tqdm(train_loader)):
 
             model.train()
@@ -280,9 +263,9 @@ with open(f"/data/cb/scratch/varun/esm-multimer/esm-multimer/models/esm2_t33_650
 def calculate_scores(args):
 
     if args.mhc:
-        save_name = args.save_name + '_mhc'
+        args.save_name + '_mhc'
     else:
-        save_name = args.save_name
+        args.save_name
 
 
     model = FlabWrapper(cfg, args.checkpoint_path, args.freeze_percent, args.use_multimer, args.hdim, args.dropout, args.device)

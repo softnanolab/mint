@@ -1,19 +1,13 @@
-import os,sys,re
+import os
+import re
 import argparse, json
-import copy
 import random
-import pickle
 import math
 import torch
 from torch import nn
-import numpy as np
-import pandas as pd
-from torch.utils.data import Dataset
 from tqdm import tqdm
-from easydict import EasyDict
-import enum
 
-import plm_multimer, gzip
+import plm_multimer
 from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
 from tasks import get_task_datasets
@@ -26,7 +20,7 @@ class PPICollateFn:
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
-        batch_size = len(batches)
+        len(batches)
         heavy_chain, light_chain, labels = zip(*batches)
         chains = [self.convert(c) for c in [heavy_chain, light_chain]]
         chain_ids = [torch.ones(c.shape, dtype=torch.int32) * i for i, c in enumerate(chains)]
@@ -61,7 +55,7 @@ class MutationalPPICollateFn:
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
-        batch_size = len(batches)
+        len(batches)
         wt_ab, wt_ag, mut_ab, mut_ag, labels = zip(*batches)
         
         wt_chains = [self.convert(c) for c in [wt_ab, wt_ag]]

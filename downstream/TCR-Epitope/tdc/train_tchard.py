@@ -1,8 +1,6 @@
-import os,sys,re
+import re
 import argparse, json
-import copy
 import random
-import pickle
 import math
 import torch
 from torch import nn
@@ -11,28 +9,13 @@ import pandas as pd
 from torch.utils.data import Dataset, WeightedRandomSampler
 from tqdm import tqdm
 #from tqdm.notebook import tqdm
-from Bio.PDB.PDBParser import PDBParser
-from Bio.PDB.Polypeptide import one_to_index
-from Bio.PDB import Selection
-from Bio import SeqIO
-from Bio.PDB.Residue import Residue
-from easydict import EasyDict
-import enum
 
-import plm_multimer, gzip
-from Bio import SeqIO
+import plm_multimer
 from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
-from sklearn.metrics import mean_squared_error
-import scipy.stats
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold, GridSearchCV, PredefinedSplit
-from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.linear_model import Ridge, LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import PowerTransformer
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, precision_recall_curve, auc
 
 import warnings
@@ -75,7 +58,7 @@ class PPICollateFn:
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
-        batch_size = len(batches)
+        len(batches)
         ab_chain, ag_chain, labels = zip(*batches)
         
         chains = [self.convert(c) for c in [ab_chain, ag_chain]]
@@ -233,7 +216,6 @@ def train(model, train_loader, val_loader, cfg, args, prefix):
     for epoch in range(args.num_epochs):
         print(f'Training at epoch {epoch}')
         loss_accum = 0
-        best_pearson = 0
         for step, train_batch in enumerate(tqdm(train_loader)):
 
             model.train()

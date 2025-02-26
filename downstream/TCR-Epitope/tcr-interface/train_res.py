@@ -2,7 +2,6 @@ import sys, json, math
 sys.path.append('.')
 import numpy as np
 import pandas as pd
-import shutil
 import argparse
 from tqdm import tqdm
 import pytorch_lightning as pl
@@ -12,21 +11,15 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
 
 from torch.optim.lr_scheduler import StepLR
-from easydict import EasyDict
-import enum
-import plm_multimer, gzip
-from Bio import SeqIO
+import plm_multimer
 from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
-from sklearn.metrics import mean_squared_error
-import scipy.stats
 
 
-from teim_utils import load_config, calc_auc_aupr, get_scores_dist, get_scores_contact, decoding_one_mat
+from teim_utils import load_config, get_scores_dist, get_scores_contact, decoding_one_mat
 from teim_utils import load_data
 import os, wandb
 
@@ -202,14 +195,14 @@ class PPICollateFn:
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
-        batch_size = len(batches)
+        len(batches)
 
         cdr3_list = [item['cdr3_seqs'] for item in batches]
         epi_list = [item['epi_seqs'] for item in batches]
         dist_mat_list = [item['dist_mat'] for item in batches]
         mask_mat_list = [item['mask_mat'] for item in batches]
         contact_mat_list = [item['contact_mat'] for item in batches]
-        pdb_ids = [item['pdb_chains'] for item in batches]
+        [item['pdb_chains'] for item in batches]
         epi_aa_list = [item['epi'] for item in batches]
 
         cdr3_enc = self.convert(cdr3_list, 20+2)
@@ -360,7 +353,7 @@ class FlabWrapper(nn.Module):
 
         
     def forward(self, chains, chain_ids, epi_aa):
-        mask = (~chains.eq(self.model.cls_idx)) & (~chains.eq(self.model.eos_idx)) & (~chains.eq(self.model.padding_idx))
+        (~chains.eq(self.model.cls_idx)) & (~chains.eq(self.model.eos_idx)) & (~chains.eq(self.model.padding_idx))
         chain_out = self.model(chains, chain_ids, repr_layers=[33])["representations"][33]
 
         len_epi = 12

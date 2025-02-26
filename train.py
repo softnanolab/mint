@@ -2,9 +2,10 @@ from plm_multimer.utils.parsing import parse_train_args
 
 args = parse_train_args()
 
-import torch, yaml, glob, argparse, plm_multimer, re, time, os, tqdm, wandb, json
-from collections import defaultdict
-from plm_multimer.model.esm2 import ESM2
+import torch
+import argparse
+import re
+import json
 
 from plm_multimer.utils.wrapper import ESMWrapper
 from plm_multimer.utils.dataset import STRINGDataset, CollateFn

@@ -2,20 +2,16 @@ import logging, os
 import re
 from abc import ABC, abstractmethod
 from functools import partial
-from types import SimpleNamespace
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-import numpy as np
 import torch
 import tqdm as tqdm
 from torch import Tensor
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from transformers import (
-    AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
-    AutoModelForMaskedLM,
     AutoTokenizer,
     BatchEncoding,
     DefaultDataCollator,

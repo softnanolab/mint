@@ -1,6 +1,5 @@
-import sys, math, gzip
+import math
 import pandas as pd
-import numpy as np
 import argparse, json
 import torch
 from torch import nn

@@ -1,7 +1,6 @@
 import sys, json, math, os
 sys.path.append('.')
 import numpy as np
-import pandas as pd
 import shutil
 import argparse
 from tqdm import tqdm
@@ -13,15 +12,10 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from easydict import EasyDict
-import enum
 
-import plm_multimer, gzip
-from Bio import SeqIO
+import plm_multimer
 from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
-from sklearn.metrics import mean_squared_error
-import scipy.stats
 from teim_utils import *
 
 
@@ -192,7 +186,7 @@ class PPICollateFn:
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
-        batch_size = len(batches)
+        len(batches)
 
         cdr3_list = [item['cdr3_seqs'] for item in batches]
         epi_list = [item['epi_seqs'] for item in batches]
@@ -337,7 +331,7 @@ class FlabWrapper(nn.Module):
 
         
     def forward(self, chains, chain_ids, epi_aa):
-        mask = (~chains.eq(self.model.cls_idx)) & (~chains.eq(self.model.eos_idx)) & (~chains.eq(self.model.padding_idx))
+        (~chains.eq(self.model.cls_idx)) & (~chains.eq(self.model.eos_idx)) & (~chains.eq(self.model.padding_idx))
         chain_out = self.model(chains, chain_ids, repr_layers=[33])["representations"][33]
 
         len_epi = 12

@@ -1,8 +1,6 @@
-import os,sys,re
+import re
 import argparse, json
-import copy
 import random
-import pickle
 import math
 import torch
 from torch import nn
@@ -11,19 +9,10 @@ import pandas as pd
 from torch.utils.data import Dataset
 from tqdm import tqdm
 #from tqdm.notebook import tqdm
-from Bio.PDB.PDBParser import PDBParser
-from Bio.PDB.Polypeptide import one_to_index
-from Bio.PDB import Selection
-from Bio import SeqIO
-from Bio.PDB.Residue import Residue
-from easydict import EasyDict
-import enum
 
-import plm_multimer, gzip
-from Bio import SeqIO
+import plm_multimer
 from plm_multimer.model.esm2 import ESM2
 from collections import OrderedDict
-from sklearn.metrics import mean_squared_error
 import scipy.stats
 
 import wandb
@@ -32,8 +21,6 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.linear_model import Ridge
-from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
 from sklearn.preprocessing import PowerTransformer
 
@@ -66,7 +53,7 @@ class DesautelsCollateFn:
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
-        batch_size = len(batches)
+        len(batches)
         heavy_chain, light_chain, labels = zip(*batches)
         chains = [self.convert(c) for c in [heavy_chain, light_chain]]
         chain_ids = [torch.ones(c.shape, dtype=torch.int32) * i for i, c in enumerate(chains)]

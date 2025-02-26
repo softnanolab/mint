@@ -1,4 +1,4 @@
-import os, argparse
+import argparse
 import numpy as np
 import torch
 from torch import nn
@@ -25,7 +25,7 @@ def clean_tn(input_tensor):
     return input_tensor
 
 def regression_metrics(test_targets, Y_pred):
-    r2 = r2_score(test_targets, Y_pred)
+    r2_score(test_targets, Y_pred)
     p_corr = scipy.stats.pearsonr(test_targets, Y_pred)
     s_corr = scipy.stats.spearmanr(test_targets, Y_pred)
     mse = mean_squared_error(test_targets, Y_pred)

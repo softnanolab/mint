@@ -1,4 +1,7 @@
-import torch, esm, tqdm, random, os, gzip
+import torch
+import esm
+import random
+import gzip
 from Bio import SeqIO
 
 class CollateFn:

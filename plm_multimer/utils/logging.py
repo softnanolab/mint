@@ -1,4 +1,6 @@
-import yaml, logging, socket, os, sys
+import logging
+import socket
+import os
 
 model_dir = os.environ.get("MODEL_DIR", "./workdir/default")
 
