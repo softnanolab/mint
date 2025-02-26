@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("plm_multimer/version.py") as infile:
     exec(infile.read())
@@ -30,10 +30,10 @@ setup(
     license="MIT",
     extras_require=extras,
     classifiers=[
-            'Intended Audience :: Science/Research',
-            'License :: OSI Approved :: MIT License',
-            'Programming Language :: Python :: 3.7',
-        ],
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3.7",
+    ],
     include_package_data=True,
     zip_safe=False,
 )

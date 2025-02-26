@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Union
+
 import torch
 import torch.nn as nn
 
@@ -42,11 +43,9 @@ class ESM2(nn.Module):
     def _init_submodules(self):
         self.embed_scale = 1
         self.embed_tokens = nn.Embedding(
-            self.alphabet_size,
-            self.embed_dim,
-            padding_idx=self.padding_idx,
+            self.alphabet_size, self.embed_dim, padding_idx=self.padding_idx,
         )
-        
+
         self.layers = nn.ModuleList(
             [
                 TransformerLayer(
@@ -76,7 +75,14 @@ class ESM2(nn.Module):
             weight=self.embed_tokens.weight,
         )
 
-    def forward(self, tokens, chain_ids=None, repr_layers=[], need_head_weights=False, return_contacts=False):
+    def forward(
+        self,
+        tokens,
+        chain_ids=None,
+        repr_layers=[],
+        need_head_weights=False,
+        return_contacts=False,
+    ):
         if return_contacts:
             need_head_weights = True
 
@@ -85,7 +91,7 @@ class ESM2(nn.Module):
 
         if chain_ids is None:
             chain_ids = torch.zeros_like(tokens)
-        self_attn_mask = ~torch.eq(chain_ids.unsqueeze(-1), chain_ids.unsqueeze(-2)) # B, T, T
+        self_attn_mask = ~torch.eq(chain_ids.unsqueeze(-1), chain_ids.unsqueeze(-2))  # B, T, T
 
         x = self.embed_scale * self.embed_tokens(tokens)
 
@@ -107,13 +113,12 @@ class ESM2(nn.Module):
 
         if need_head_weights:
             attn_weights = []
-    
+
         # (B, T, E) => (T, B, E)
         x = x.transpose(0, 1)
 
         if not padding_mask.any():
             padding_mask = None
-
 
         for layer_idx, layer in enumerate(self.layers):
             x, attn = layer(

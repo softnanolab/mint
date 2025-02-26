@@ -4,15 +4,15 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
+import uuid
 from typing import Dict, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 from torch.nn import Parameter
-from .rotary_embedding import RotaryEmbedding
 
-import uuid
+from .rotary_embedding import RotaryEmbedding
 
 
 def utils_softmax(x, dim: int, onnx_trace: bool = False):
@@ -34,9 +34,7 @@ class FairseqIncrementalState(object):
         return "{}.{}".format(self._incremental_state_id, key)
 
     def get_incremental_state(
-        self,
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]],
-        key: str,
+        self, incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]], key: str,
     ) -> Optional[Dict[str, Optional[Tensor]]]:
         """Helper for getting incremental state for an nn.Module."""
         full_key = self._get_full_incremental_state_key(key)
@@ -84,7 +82,7 @@ class MultiheadAttention(nn.Module):
         self_attention: bool = False,
         encoder_decoder_attention: bool = False,
         use_rotary_embeddings: bool = False,
-        no_proj = False,
+        no_proj=False,
     ):
         super().__init__()
         self.embed_dim = embed_dim
@@ -98,7 +96,7 @@ class MultiheadAttention(nn.Module):
         assert (
             self.head_dim * num_heads == self.embed_dim
         ), "embed_dim must be divisible by num_heads"
-        self.scaling = self.head_dim**-0.5
+        self.scaling = self.head_dim ** -0.5
 
         self.self_attention = self_attention
         self.encoder_decoder_attention = encoder_decoder_attention
@@ -275,10 +273,7 @@ class MultiheadAttention(nn.Module):
                 )
             if key_padding_mask is not None:
                 key_padding_mask = torch.cat(
-                    [
-                        key_padding_mask,
-                        key_padding_mask.new_zeros(key_padding_mask.size(0), 1),
-                    ],
+                    [key_padding_mask, key_padding_mask.new_zeros(key_padding_mask.size(0), 1),],
                     dim=1,
                 )
 
@@ -374,7 +369,7 @@ class MultiheadAttention(nn.Module):
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
             attn_weights = attn_weights.masked_fill(attn_mask.unsqueeze(1), float("-inf"))
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
-            
+
         if key_padding_mask is not None:
             # don't attend to padding symbols
             attn_weights = attn_weights.view(bsz, self.num_heads, tgt_len, src_len)
@@ -384,17 +379,20 @@ class MultiheadAttention(nn.Module):
             attn_weights = attn_weights.view(bsz * self.num_heads, tgt_len, src_len)
 
         if before_softmax:
-            return attn_weights.view(bsz, self.num_heads, tgt_len, src_len), v.view(bsz, self.num_heads, src_len, self.head_dim)
+            return (
+                attn_weights.view(bsz, self.num_heads, tgt_len, src_len),
+                v.view(bsz, self.num_heads, src_len, self.head_dim),
+            )
 
         attn_weights_float = utils_softmax(attn_weights, dim=-1, onnx_trace=self.onnx_trace)
         attn_weights = attn_weights_float.type_as(attn_weights)
         attn_probs = F.dropout(
-            attn_weights_float.type_as(attn_weights),
-            p=self.dropout,
-            training=self.training,
+            attn_weights_float.type_as(attn_weights), p=self.dropout, training=self.training,
         )
         assert v is not None
-        attn = torch.bmm(attn_probs, v) # (bsz*num_heads, tgt_len, src_len), (bsz * self.num_heads, src_len, self.head_dim) -> (bsz * self.num_heads, tgt_len, self.head_dim)
+        attn = torch.bmm(
+            attn_probs, v
+        )  # (bsz*num_heads, tgt_len, src_len), (bsz * self.num_heads, src_len, self.head_dim) -> (bsz * self.num_heads, tgt_len, self.head_dim)
         assert list(attn.size()) == [bsz * self.num_heads, tgt_len, self.head_dim]
         if self.onnx_trace and attn.size(1) == 1:
             # when ONNX tracing a single decoder step (sequence length == 1)
@@ -405,9 +403,11 @@ class MultiheadAttention(nn.Module):
         attn = self.out_proj(attn)
         attn_weights: Optional[Tensor] = None
         if need_weights:
-            attn_weights = attn_weights_float.view(
-                bsz, self.num_heads, tgt_len, src_len
-            ).type_as(attn).transpose(1, 0)
+            attn_weights = (
+                attn_weights_float.view(bsz, self.num_heads, tgt_len, src_len)
+                .type_as(attn)
+                .transpose(1, 0)
+            )
             if not need_head_weights:
                 # average attention weights over heads
                 attn_weights = attn_weights.mean(dim=0)
@@ -442,8 +442,7 @@ class MultiheadAttention(nn.Module):
             )
         elif key_padding_mask is not None:
             filler = torch.zeros(
-                (batch_size, src_len - key_padding_mask.size(1)),
-                device=key_padding_mask.device,
+                (batch_size, src_len - key_padding_mask.size(1)), device=key_padding_mask.device,
             )
             new_key_padding_mask = torch.cat([filler.float(), key_padding_mask.float()], dim=1)
         else:

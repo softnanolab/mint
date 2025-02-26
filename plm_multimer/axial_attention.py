@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
+
 import torch
 import torch.nn as nn
 
@@ -12,11 +13,7 @@ class RowSelfAttention(nn.Module):
     """Compute self-attention over rows of a 2D input."""
 
     def __init__(
-        self,
-        embed_dim,
-        num_heads,
-        dropout=0.0,
-        max_tokens_per_msa: int = 2 ** 16,
+        self, embed_dim, num_heads, dropout=0.0, max_tokens_per_msa: int = 2 ** 16,
     ):
         super().__init__()
         self.num_heads = num_heads
@@ -38,10 +35,7 @@ class RowSelfAttention(nn.Module):
         return self.scaling / math.sqrt(num_rows)
 
     def _batched_forward(
-        self,
-        x,
-        self_attn_mask=None,
-        self_attn_padding_mask=None,
+        self, x, self_attn_mask=None, self_attn_padding_mask=None,
     ):
         num_rows, num_cols, batch_size, embed_dim = x.size()
         max_rows = max(1, self.max_tokens_per_msa // num_cols)
@@ -69,11 +63,7 @@ class RowSelfAttention(nn.Module):
         return output, attn_probs
 
     def compute_attention_weights(
-        self,
-        x,
-        scaling: float,
-        self_attn_mask=None,
-        self_attn_padding_mask=None,
+        self, x, scaling: float, self_attn_mask=None, self_attn_padding_mask=None,
     ):
         num_rows, num_cols, batch_size, embed_dim = x.size()
         q = self.q_proj(x).view(num_rows, num_cols, batch_size, self.num_heads, self.head_dim)
@@ -92,16 +82,13 @@ class RowSelfAttention(nn.Module):
 
         if self_attn_padding_mask is not None:
             attn_weights = attn_weights.masked_fill(
-                self_attn_padding_mask[:, 0].unsqueeze(0).unsqueeze(2),
-                -10000,
+                self_attn_padding_mask[:, 0].unsqueeze(0).unsqueeze(2), -10000,
             )
 
         return attn_weights
 
     def compute_attention_update(
-        self,
-        x,
-        attn_probs,
+        self, x, attn_probs,
     ):
         num_rows, num_cols, batch_size, embed_dim = x.size()
         v = self.v_proj(x).view(num_rows, num_cols, batch_size, self.num_heads, self.head_dim)
@@ -111,10 +98,7 @@ class RowSelfAttention(nn.Module):
         return output
 
     def forward(
-        self,
-        x,
-        self_attn_mask=None,
-        self_attn_padding_mask=None,
+        self, x, self_attn_mask=None, self_attn_padding_mask=None,
     ):
         num_rows, num_cols, batch_size, embed_dim = x.size()
         if (num_rows * num_cols > self.max_tokens_per_msa) and not torch.is_grad_enabled():
@@ -134,11 +118,7 @@ class ColumnSelfAttention(nn.Module):
     """Compute self-attention over columns of a 2D input."""
 
     def __init__(
-        self,
-        embed_dim,
-        num_heads,
-        dropout=0.0,
-        max_tokens_per_msa: int = 2 ** 16,
+        self, embed_dim, num_heads, dropout=0.0, max_tokens_per_msa: int = 2 ** 16,
     ):
         super().__init__()
 
@@ -156,10 +136,7 @@ class ColumnSelfAttention(nn.Module):
         self.dropout_module = nn.Dropout(dropout)
 
     def _batched_forward(
-        self,
-        x,
-        self_attn_mask=None,
-        self_attn_padding_mask=None,
+        self, x, self_attn_mask=None, self_attn_padding_mask=None,
     ):
         num_rows, num_cols, batch_size, embed_dim = x.size()
         max_cols = max(1, self.max_tokens_per_msa // num_rows)
@@ -180,10 +157,7 @@ class ColumnSelfAttention(nn.Module):
         return output, attns
 
     def compute_attention_update(
-        self,
-        x,
-        self_attn_mask=None,
-        self_attn_padding_mask=None,
+        self, x, self_attn_mask=None, self_attn_padding_mask=None,
     ):
         num_rows, num_cols, batch_size, embed_dim = x.size()
         if num_rows == 1:
@@ -210,8 +184,7 @@ class ColumnSelfAttention(nn.Module):
                 raise NotImplementedError
             if self_attn_padding_mask is not None:
                 attn_weights = attn_weights.masked_fill(
-                    self_attn_padding_mask.permute(2, 0, 1).unsqueeze(0).unsqueeze(3),
-                    -10000,
+                    self_attn_padding_mask.permute(2, 0, 1).unsqueeze(0).unsqueeze(3), -10000,
                 )
 
             attn_probs = attn_weights.softmax(-1)
@@ -222,18 +195,11 @@ class ColumnSelfAttention(nn.Module):
         return output, attn_probs
 
     def forward(
-        self,
-        x,
-        self_attn_mask=None,
-        self_attn_padding_mask=None,
+        self, x, self_attn_mask=None, self_attn_padding_mask=None,
     ):
         num_rows, num_cols, batch_size, embed_dim = x.size()
         # if False and num_rows * num_cols > 2 ** 14 and not torch.is_grad_enabled():
         if (num_rows * num_cols) > self.max_tokens_per_msa and not torch.is_grad_enabled():
-            return self._batched_forward(
-                x,
-                self_attn_mask,
-                self_attn_padding_mask,
-            )
+            return self._batched_forward(x, self_attn_mask, self_attn_padding_mask,)
         else:
             return self.compute_attention_update(x, self_attn_mask, self_attn_padding_mask)

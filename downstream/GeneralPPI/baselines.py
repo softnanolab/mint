@@ -1,4 +1,5 @@
-import logging, os
+import logging
+import os
 import re
 from abc import ABC, abstractmethod
 from functools import partial
@@ -6,6 +7,7 @@ from typing import Dict, List
 
 import torch
 import tqdm as tqdm
+from datasets import Dataset
 from torch import Tensor
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
@@ -16,10 +18,10 @@ from transformers import (
     BatchEncoding,
     DefaultDataCollator,
     T5EncoderModel,
-    T5Tokenizer
+    T5Tokenizer,
 )
-from datasets import Dataset
 from transformers.modeling_outputs import BaseModelOutput
+
 
 def pool(
     last_hidden_states: torch.Tensor, attention_mask: torch.Tensor, pool_type: str
@@ -44,10 +46,11 @@ def pool(
         raise ValueError(f"pool_type {pool_type} not supported")
     return emb
 
+
 logger = logging.getLogger(__name__)
 
-class BioSeqTransformer(ABC):
 
+class BioSeqTransformer(ABC):
     def __init__(
         self,
         model_name: str,
@@ -61,15 +64,13 @@ class BioSeqTransformer(ABC):
     ):
         super().__init__()
 
-        os.environ['HF_HOME'] = './'
+        os.environ["HF_HOME"] = "./"
 
         self.id = self.__class__.__name__
         self.hf_name = model_name
         self.encoder = self._load_model(model_name)
         if not hasattr(self.encoder, "config"):
-            raise ValueError(
-                'The model from `self._load_model()` must have a "config" attribute.'
-            )
+            raise ValueError('The model from `self._load_model()` must have a "config" attribute.')
         self.config = self.encoder.config
         self.tokenizer = self._get_tokenizer(model_name)
         self.num_param = sum(p.numel() for p in self.encoder.parameters())
@@ -77,9 +78,7 @@ class BioSeqTransformer(ABC):
         self.gpu_count = len(devices)
         self.l2_norm = l2_norm
 
-        self.device = torch.device(
-            f"cuda:{devices[0]}" if torch.cuda.is_available() else "cpu"
-        )
+        self.device = torch.device(f"cuda:{devices[0]}" if torch.cuda.is_available() else "cpu")
         self.num_processes = num_processes
         self.max_seq_length = max_seq_length
         self.batch_size = batch_size
@@ -122,23 +121,24 @@ class BioSeqTransformer(ABC):
         return embeds
 
     def _load_model(self, model_name):
-        model = AutoModel.from_pretrained(model_name, trust_remote_code=True, cache_dir='./baseline_models/')
-        print(f'Loaded model for: {model_name}')
+        model = AutoModel.from_pretrained(
+            model_name, trust_remote_code=True, cache_dir="./baseline_models/"
+        )
+        print(f"Loaded model for: {model_name}")
         return model
 
     def _get_tokenizer(self, model_name):
-        tok = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, cache_dir='./baseline_models/')
-        print(f'Loaded tokenizer for: {model_name}')
+        tok = AutoTokenizer.from_pretrained(
+            model_name, trust_remote_code=True, cache_dir="./baseline_models/"
+        )
+        print(f"Loaded tokenizer for: {model_name}")
         return tok
 
     def _tokenize_func(
         self, tokenizer, examples: Dict[str, List], max_seq_length: int
     ) -> BatchEncoding:
         batch_dict = tokenizer(
-            examples["input_seqs"],
-            max_length=max_seq_length,
-            padding=True,
-            truncation=True,
+            examples["input_seqs"], max_length=max_seq_length, padding=True, truncation=True,
         )
         return batch_dict
 
@@ -171,9 +171,7 @@ class BioSeqTransformer(ABC):
         """
         dataset = Dataset.from_dict({"input_seqs": sequences})
         dataset.set_transform(
-            partial(
-                self._tokenize_func, self.tokenizer, max_seq_length=self.max_seq_length
-            )
+            partial(self._tokenize_func, self.tokenizer, max_seq_length=self.max_seq_length)
         )
         data_loader = DataLoader(
             dataset,
@@ -191,9 +189,7 @@ class BioSeqTransformer(ABC):
             )
 
         encoded_embeds = []
-        for batch_dict in tqdm.tqdm(
-            data_loader, desc="encoding", mininterval=10
-        ):
+        for batch_dict in tqdm.tqdm(data_loader, desc="encoding", mininterval=10):
             batch_dict = {k: v.to(self.device) for k, v in batch_dict.items()}
 
             embeds = self._encode_single_batch(batch_dict)
@@ -205,15 +201,15 @@ class BioSeqTransformer(ABC):
         return torch.cat(encoded_embeds, dim=0)
 
     @torch.no_grad()
-    def encode_two(self, sequences1, sequences2, how='subtract', **kwargs):
+    def encode_two(self, sequences1, sequences2, how="subtract", **kwargs):
         encodings1 = self.encode(sequences1)
         encodings2 = self.encode(sequences2)
 
-        if how == 'subtract':
+        if how == "subtract":
             return encodings1 - encodings2
         else:
             return torch.cat([encodings1, encodings2], -1)
-        
+
 
 class ESM(BioSeqTransformer):
     """ESM model from https://huggingface.co/docs/transformers/en/model_doc/esm"""
@@ -235,6 +231,7 @@ class ESM(BioSeqTransformer):
     def embed_dim(self) -> int:
         return self.config.hidden_size
 
+
 class ProtT5(BioSeqTransformer):
     """ProtT5 model from https://github.com/agemagician/ProtTrans"""
 
@@ -245,7 +242,6 @@ class ProtT5(BioSeqTransformer):
         "Rostlab/prot_t5_xxl_bfd",
     ]
 
-
     @property
     def num_layers(self) -> int:
         return self.config.num_layers
@@ -255,13 +251,15 @@ class ProtT5(BioSeqTransformer):
         return self.config.d_model
 
     def _load_model(self, model_name):
-        model = T5EncoderModel.from_pretrained(model_name, cache_dir='./baseline_models/')
-        print(f'Loaded model for: {model_name}')
+        model = T5EncoderModel.from_pretrained(model_name, cache_dir="./baseline_models/")
+        print(f"Loaded model for: {model_name}")
         return model
 
     def _get_tokenizer(self, model_name):
-        tok = T5Tokenizer.from_pretrained(model_name, do_lower_case=False, cache_dir='./baseline_models/')
-        print(f'Loaded tokenizer for: {model_name}')
+        tok = T5Tokenizer.from_pretrained(
+            model_name, do_lower_case=False, cache_dir="./baseline_models/"
+        )
+        print(f"Loaded tokenizer for: {model_name}")
         return tok
 
     def _tokenize_func(
@@ -270,9 +268,7 @@ class ProtT5(BioSeqTransformer):
         example_sequences = examples["input_seqs"]
         # Add space between amino acids to make sure they are tokenized correctly.
         example_sequences = [" ".join(sequence) for sequence in example_sequences]
-        example_sequences = [
-            re.sub(r"[UZOB]", "X", sequence) for sequence in example_sequences
-        ]
+        example_sequences = [re.sub(r"[UZOB]", "X", sequence) for sequence in example_sequences]
         batch_dict = tokenizer(
             example_sequences,
             max_length=max_seq_length,
@@ -282,6 +278,7 @@ class ProtT5(BioSeqTransformer):
         )
 
         return batch_dict
+
 
 class ProGen(BioSeqTransformer):
     """ProGen models from https://github.com/salesforce/progen."""
@@ -294,7 +291,6 @@ class ProGen(BioSeqTransformer):
         "hugohrban/progen2-xlarge",
     ]
 
-
     @property
     def num_layers(self) -> int:
         return self.config.n_layer
@@ -304,24 +300,24 @@ class ProGen(BioSeqTransformer):
         return self.config.embed_dim
 
     def _load_model(self, model_name):
-        model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, cache_dir='./baseline_models/')
-        print(f'Loaded model for: {model_name}')
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name, trust_remote_code=True, cache_dir="./baseline_models/"
+        )
+        print(f"Loaded model for: {model_name}")
         return model
 
     def _get_tokenizer(self, model_name):
         tokenizer = AutoTokenizer.from_pretrained(
-            model_name, trust_remote_code=True, cache_dir='./baseline_models/'
+            model_name, trust_remote_code=True, cache_dir="./baseline_models/"
         )
         tokenizer.pad_token = "<|pad|>"
-        print(f'Loaded tokenizer for: {model_name}')
+        print(f"Loaded tokenizer for: {model_name}")
         return tokenizer
 
     def _encode_single_batch(self, batch_dict: Dict[str, Tensor]):
         """Returns the output embedding for the given batch with shape [batch, num_layers, D]."""
         outputs: BaseModelOutput = self.encoder(
-            input_ids=batch_dict["input_ids"],
-            output_hidden_states=True,
-            use_cache=False,
+            input_ids=batch_dict["input_ids"], output_hidden_states=True, use_cache=False,
         )
         embeds = [outputs.hidden_states[layer] for layer in self.layers]
         embeds = [
@@ -331,4 +327,3 @@ class ProGen(BioSeqTransformer):
         # Stack with shape [B, num_layers, D].
         embeds = torch.stack(embeds, dim=1)
         return embeds
-

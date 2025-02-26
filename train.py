@@ -2,19 +2,20 @@ from plm_multimer.utils.parsing import parse_train_args
 
 args = parse_train_args()
 
-import torch
 import argparse
-import re
 import json
-
-from plm_multimer.utils.wrapper import ESMWrapper
-from plm_multimer.utils.dataset import STRINGDataset, CollateFn
+import re
 
 import lightning as pl
+import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.strategies import DDPStrategy
 
+from plm_multimer.utils.dataset import CollateFn, STRINGDataset
+from plm_multimer.utils.wrapper import ESMWrapper
+
 torch.set_float32_matmul_precision("medium")
+
 
 def upgrade_state_dict(state_dict):
     """Removes prefixes 'model.encoder.sentence_encoder.' and 'model.encoder.'."""
@@ -25,39 +26,36 @@ def upgrade_state_dict(state_dict):
 
 
 trainer = pl.Trainer(
-    default_root_dir=f'./checkpoints/{args.run_name}',
+    default_root_dir=f"./checkpoints/{args.run_name}",
     accelerator="gpu",
-    devices=[0,1,2,3,4,5,6,7],
+    devices=[0, 1, 2, 3, 4, 5, 6, 7],
     max_steps=args.max_steps,
     num_sanity_val_steps=2,
     enable_progress_bar=not args.wandb,
     gradient_clip_val=args.grad_clip,
     enable_checkpointing=True,
-    callbacks=[
-        ModelCheckpoint(
-            dirpath=f'./checkpoints/{args.run_name}',
-            save_top_k=-1,
-        )
-    ],
+    callbacks=[ModelCheckpoint(dirpath=f"./checkpoints/{args.run_name}", save_top_k=-1,)],
     accumulate_grad_batches=args.accumulate_grad,
     val_check_interval=args.val_check_interval,
-    strategy=DDPStrategy(find_unused_parameters=True) if args.freeze_self_attn else "ddp_find_unused_parameters_false"
+    strategy=DDPStrategy(find_unused_parameters=True)
+    if args.freeze_self_attn
+    else "ddp_find_unused_parameters_false",
 )
 
-if args.dataset_split in ['filtered', 'full']:
+if args.dataset_split in ["filtered", "full"]:
     val_links_file = "../validation.links.txt.gz"
     val_seqs_file = "../validation.seqs.txt.gz"
-    if args.dataset_split == 'filtered':
+    if args.dataset_split == "filtered":
         train_links_file = "../training_filtered.links.txt.gz"
         train_seqs_file = "../training_filtered.seqs.txt.gz"
     else:
         pass
-elif args.dataset_split == 'filtered_50':
+elif args.dataset_split == "filtered_50":
     val_links_file = "../validation.links.50.txt.gz"
     val_seqs_file = "../validation.seqs.50.txt.gz"
     train_links_file = "../training.links.50.txt.gz"
     train_seqs_file = "../training.seqs.50.txt.gz"
-    
+
 val_ds = STRINGDataset(
     val_links_file,
     val_seqs_file,
@@ -111,7 +109,7 @@ if (not args.no_multimer) and args.copy_weights:
 if args.validate:
     if args.ckpt:
         ckpt = torch.load(args.ckpt)
-        model.load_state_dict(ckpt['state_dict'], strict=False)
+        model.load_state_dict(ckpt["state_dict"], strict=False)
     trainer.validate(model, val_loader)
 else:
     trainer.fit(model, train_loader, val_loader, ckpt_path=args.ckpt)
@@ -123,4 +121,4 @@ else:
 # python train.py --batch_size 2 --crop_len 512 --model 650M --val_check_interval 320000 --copy_weights --accumulate_grad 32 --freeze_self_attn --run_name 650M_freeze_filtered --wandb --dataset_split filtered
 
 # nofreeze
-# python train.py --batch_size 2 --crop_len 512 --model 650M --val_check_interval 320000 --accumulate_grad 32 --run_name 650M_nofreeze_filtered --copy_weights --wandb --dataset_split filtered 
+# python train.py --batch_size 2 --crop_len 512 --model 650M --val_check_interval 320000 --accumulate_grad 32 --run_name 650M_nofreeze_filtered --copy_weights --wandb --dataset_split filtered

@@ -10,12 +10,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..modules import (
-    TransformerLayer,
-    LearnedPositionalEmbedding,
-    SinusoidalPositionalEmbedding,
-    RobertaLMHead,
-    ESM1bLayerNorm,
     ContactPredictionHead,
+    ESM1bLayerNorm,
+    LearnedPositionalEmbedding,
+    RobertaLMHead,
+    SinusoidalPositionalEmbedding,
+    TransformerLayer,
 )
 
 
