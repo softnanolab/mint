@@ -59,8 +59,31 @@ print(embeddings) # Should be of shape (2, 1280)
 
 ### Finetuning 
 
+To finetune our model on a new supervised dataset, simply set the `freeze_percent` parameter to anything other than 1. Setting it to 0.5 means the 50% of the model layers can be trained. For example, 
+
+```
+import torch
+from plm_multimer.helpers.extract import PLMMultimerWrapper
+
+cfg = load_config("data/esm2_t33_650M_UR50D.json") # model config
+device = 'cuda:0' # GPU device
+checkpoint_path = '' # Where you stored the model checkpoint
+
+wrapper = PLMMultimerWrapper(cfg, checkpoint_path, freeze_percent=0.5, device=device)
+for name, param in wrapper.model.named_parameters():
+    print(f"Parameter: {name}, Trainable: {param.requires_grad}")
+```
+
 ### Examples 
 
-We provide several examples highlighting the use cases of PLM-Multimer on various protein input types. 
+We provide several examples highlighting the use cases of PLM-Multimer on various supervised tasks and different protein types in the `downstream` folder. 
+
+1. [Predict whether two proteins interact or not](./downstream/GeneralPPI/ppi)
+2. [Predict the binding affinity of protein complexes](./downstream/GeneralPPI/pdb-bind)
+3. [Predict the difference in binding affinity in protein complexes upon mutation](./downstream/GeneralPPI/SKEMPI_v2)
+4. [Predict whether two proteins interact or not after mutation](./downstream/GeneralPPI/mutational-ppi)
+
 
 ## 📝 Citing 
+
+Coming soon!
