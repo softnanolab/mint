@@ -25,23 +25,27 @@ MINT (Multimeric INteraction Transformer) is a Protein Language Model (PLM) desi
 1. Create a new [conda](https://docs.anaconda.com/miniconda/install/) environment from the provided `enviroment.yml` file. 
 
 ```
-conda env create --name multimer --file=environment.yml
+conda env create --name mint --file=environment.yml
 ```
 
 2. Activate the enviroment and install the package from source.
 
 ```
-conda activate multimer
+conda activate mint
 pip install -e .
 ```
 
 3. Check if you are able to import the package.
 
 ```
-python -c "import plm_multimer; print('Success')" 
+python -c "import mint; print('Success')" 
 ```
 
-4. Download the model checkpoint from [here]() and note where the path where it is stored. 
+4. Download the model checkpoint from and note where the path where it is stored.
+
+```
+wget https://huggingface.co/varunullanat2012/mint/resolve/main/mint.ckpt
+```
 
 ## 🚀 How to use 
 
@@ -51,7 +55,7 @@ We suggest generating embeddings from a CSV file containing the interacting sequ
 
 ```
 import torch
-from plm_multimer.helpers.extract import load_config, CSVDataset, CollateFn, PLMMultimerWrapper
+from mint.helpers.extract import load_config, CSVDataset, CollateFn, MINTWrapper
 
 cfg = load_config("data/esm2_t33_650M_UR50D.json") # model config
 device = 'cuda:0' # GPU device
@@ -60,13 +64,13 @@ checkpoint_path = '' # Where you stored the model checkpoint
 dataset = CSVDataset('data/protein_sequences.csv', 'Protein_Sequence_1', 'Protein_Sequence_2')
 loader = torch.utils.data.DataLoader(dataset, batch_size=2, collate_fn=CollateFn(512), shuffle=False) 
 
-wrapper = PLMMultimerWrapper(cfg, checkpoint_path, device=device)
+wrapper = MINTWrapper(cfg, checkpoint_path, device=device)
 
 chains, chain_ids = next(iter(loader)) # Get the first batch
 chains = chains.to(device)
 chain_ids = chain_ids.to(device)
 embeddings = wrapper(chains, chain_ids)  # Generate embeddings
-print(embeddings) # Should be of shape (2, 1280)
+print(embeddings.shape) # Should be of shape (2, 1280)
 ```
 
 ### Finetuning 
@@ -75,13 +79,13 @@ To finetune our model on a new supervised dataset, simply set the `freeze_percen
 
 ```
 import torch
-from plm_multimer.helpers.extract import PLMMultimerWrapper
+from plm_multimer.helpers.extract import MINTWrapper
 
 cfg = load_config("data/esm2_t33_650M_UR50D.json") # model config
 device = 'cuda:0' # GPU device
-checkpoint_path = '' # Where you stored the model checkpoint
+checkpoint_path = '' # path where you stored the model checkpoint
 
-wrapper = PLMMultimerWrapper(cfg, checkpoint_path, freeze_percent=0.5, device=device)
+wrapper = MINTWrapper(cfg, checkpoint_path, freeze_percent=0.5, device=device)
 for name, param in wrapper.model.named_parameters():
     print(f"Parameter: {name}, Trainable: {param.requires_grad}")
 ```
@@ -92,8 +96,8 @@ We provide several examples highlighting the use cases of MINT on various superv
 
 1. [Predict whether two proteins interact or not](./downstream/GeneralPPI/ppi)
 2. [Predict the binding affinity of protein complexes](./downstream/GeneralPPI/pdb-bind)
-3. [Predict the difference in binding affinity in protein complexes upon mutation](./downstream/GeneralPPI/SKEMPI_v2)
-4. [Predict whether two proteins interact or not after mutation](./downstream/GeneralPPI/mutational-ppi)
+3. [Predict whether two proteins interact or not after mutation](./downstream/GeneralPPI/mutational-ppi)
+4. [Predict the difference in binding affinity in protein complexes upon mutation](./downstream/GeneralPPI/SKEMPI_v2)
 
 
 ## 📝 Citing 

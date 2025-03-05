@@ -37,3 +37,7 @@ dist/
 .coverage
 .pytest_cache/
 
+test.ipynb
+
+*.ckpt
+*.pt

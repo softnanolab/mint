@@ -1,4 +1,4 @@
-name: multimer
+name: mint
 channels:
   - pytorch
   - bioconda

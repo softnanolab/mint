@@ -1,13 +1,13 @@
 from setuptools import find_packages, setup
 
-with open("plm_multimer/version.py") as infile:
+with open("mint/version.py") as infile:
     exec(infile.read())
 
 with open("README.md") as f:
     readme = f.read()
 
 extras = {
-    "plm_multimer": [
+    "mint": [
         "biopython",
         "deepspeed==0.5.9",
         "dm-tree",
@@ -19,14 +19,14 @@ extras = {
 }
 
 setup(
-    name="plm_multimer",
+    name="mint",
     version=version,
-    description="Learning the language of protein-protein interactions with PLM-Multimer",
+    description="Learning the language of protein-protein interactions",
     long_description=readme,
     long_description_content_type="text/markdown",
-    packages=find_packages(include=["plm_multimer", "plm_multimer.*"]),
+    packages=find_packages(include=["mint", "mint.*"]),
     author="Varun Ullanat",
-    url="https://github.com/VarunUllanat/plm-multimer",
+    url="https://github.com/VarunUllanat/mint",
     license="MIT",
     extras_require=extras,
     classifiers=[
