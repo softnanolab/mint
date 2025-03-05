@@ -79,7 +79,7 @@ To finetune our model on a new supervised dataset, simply set the `freeze_percen
 
 ```
 import torch
-from plm_multimer.helpers.extract import MINTWrapper
+from mint.helpers.extract import MINTWrapper
 
 cfg = load_config("data/esm2_t33_650M_UR50D.json") # model config
 device = 'cuda:0' # GPU device
