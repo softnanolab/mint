@@ -4,9 +4,18 @@
 
 ## 🧬 Overview of MINT
 
-MINT (Multimeric INteraction Transformer) is a Protein Language Model (PLM) specifically designed to model sets of interacting proteins in a contextual and scalable manner. Using unsupervised training on a large curated PPI dataset derived from the STRING database, MINT significantly outperforms existing PLMs in six diverse tasks, including binding affinity prediction and estimation of mutational effects. Beyond these core capabilities, it excels at modeling complex protein assemblies and surpasses specialized models in antibody-antigen modeling and T cell receptor–epitope binding prediction. MINT's predictions of mutational impacts on oncogenic PPIs align with experimental studies and provide reliable estimates for the potential for cross-neutralization of antibodies against SARS-CoV-2 variants of concern. These findings position MINT as a powerful tool for elucidating complex protein interactions, with significant implications for biomedical research and therapeutic discovery.
+MINT (Multimeric INteraction Transformer) is a Protein Language Model (PLM) designed for contextual and scalable modeling of interacting protein sequences. Trained on a large, curated set of 96 million protein-protein interactions (PPIs) from the STRING database, MINT outperforms existing PLMs across diverse tasks and protein types, including:
 
-![PLM-Multimer](./static/figure.png)
+- Binding affinity prediction
+- Mutational effect estimation
+- Complex protein assembly modeling
+- Antibody-antigen interaction modeling
+- T cell receptor–epitope binding prediction
+
+🔬 Why MINT?
+✅ First PLM to be trained on large-scale PPI data
+✅ State-of-the-art performance across multiple PPI tasks
+✅ Scalable and adaptable for diverse protein interactions
 
 ## 🖥️ Installation 
 
