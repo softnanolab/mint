@@ -1,4 +1,4 @@
-from plm_multimer.utils.parsing import parse_train_args
+from mint.utils.parsing import parse_train_args
 
 args = parse_train_args()
 
@@ -11,8 +11,8 @@ import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.strategies import DDPStrategy
 
-from plm_multimer.utils.dataset import CollateFn, STRINGDataset
-from plm_multimer.utils.wrapper import ESMWrapper
+from mint.utils.dataset import CollateFn, STRINGDataset
+from mint.utils.wrapper import ESMWrapper
 
 torch.set_float32_matmul_precision("medium")
 

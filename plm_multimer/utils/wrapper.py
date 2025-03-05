@@ -2,16 +2,13 @@ import json
 import time
 from collections import defaultdict
 
-# import pytorch_lightning as pl
 import lightning as pl
 import numpy as np
 import torch
 import wandb
 
-from plm_multimer.model.esm2 import ESM2
-from plm_multimer.utils.logging import get_logger
-
-# from openfold.utils.exponential_moving_average import ExponentialMovingAverage
+from ..model.esm2 import ESM2
+from .utils.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -2,7 +2,7 @@ import gzip
 import random
 
 from Bio import SeqIO
-from esm.utils.logging import get_logger
+from mint.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
