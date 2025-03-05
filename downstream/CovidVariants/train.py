@@ -17,11 +17,8 @@ from torch import nn
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-import plm_multimer
-from plm_multimer.model.esm2 import ESM2
-
-# from tqdm.notebook import tqdm
-
+import mint
+from mint.model.esm2 import ESM2
 
 warnings.filterwarnings("ignore")
 
@@ -58,7 +55,7 @@ class FlabDataset(Dataset):
 
 class DesautelsCollateFn:
     def __init__(self, truncation_seq_length=None, cat_chains=True):
-        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = mint.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
         self.cat_chains = cat_chains
 
@@ -296,5 +293,3 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     calculate_scores(args)
-
-# python train.py --use_multimer --device "cuda:0" --checkpoint_path "/data/cb/scratch/varun/esm-multimer/esm-multimer/checkpoints/650M_nofreeze_filtered_continue/epoch=0-step=140000.ckpt" --name "esm-m-140" --spike_only

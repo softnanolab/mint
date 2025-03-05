@@ -401,7 +401,7 @@ def main(args):
             "progen2-large",
             "prot_t5_xl_uniref50",
             "prot_t5_xl_bfd",
-            "plm-multimer",
+            "mint",
         ]
     else:
         model_list = [args.model]

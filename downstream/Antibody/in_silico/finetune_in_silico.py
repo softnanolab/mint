@@ -16,8 +16,8 @@ from torch import nn
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-import plm_multimer
-from plm_multimer.model.esm2 import ESM2
+import mint
+from mint.model.esm2 import ESM2
 
 
 def standardize(x):
@@ -74,7 +74,7 @@ class DesautelsDataset(Dataset):
 
 class DesautelsCollateFn:
     def __init__(self, wt_fasta_file, truncation_seq_length=None):
-        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = mint.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
 
         with open(wt_fasta_file) as file:
@@ -415,8 +415,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_key", type=str, default=None)
     parser.add_argument(
         "--checkpoint_path",
-        type=str,
-        default="/data/cb/scratch/share/esm-multimer/650M_reinit_resume/epoch=0-step=65000.ckpt",
+        type=str
     )
     parser.add_argument("--freeze_percent", type=float, default=1.0)
     parser.add_argument("--use_multimer", action="store_true", default=False)

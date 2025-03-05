@@ -31,8 +31,8 @@ from torch import nn
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
-import plm_multimer
-from plm_multimer.model.esm2 import ESM2
+import mint
+from mint.model.esm2 import ESM2
 
 
 class ResLevelSystem(pl.LightningModule):
@@ -201,7 +201,7 @@ def upgrade_state_dict(state_dict):
 
 class PPICollateFn:
     def __init__(self, truncation_seq_length=None):
-        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = mint.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):

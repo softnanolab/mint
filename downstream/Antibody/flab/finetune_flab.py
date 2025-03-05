@@ -19,14 +19,10 @@ from torch import nn
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-import plm_multimer
-from plm_multimer.model.esm2 import ESM2
-
-# from tqdm.notebook import tqdm
-
+import mint
+from mint.model.esm2 import ESM2
 
 warnings.filterwarnings("ignore")
-
 
 class FlabDataset(Dataset):
     def __init__(self, csv_path, target_col):
@@ -46,7 +42,7 @@ class FlabDataset(Dataset):
 
 class DesautelsCollateFn:
     def __init__(self, truncation_seq_length=None):
-        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = mint.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
@@ -282,8 +278,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_key", type=str, default=None)
     parser.add_argument(
         "--checkpoint_path",
-        type=str,
-        default="/data/cb/scratch/share/esm-multimer/650M_reinit_resume/epoch=0-step=65000.ckpt",
+        type=str
     )
     parser.add_argument("--use_multimer", action="store_true", default=False)
     parser.add_argument("--device", type=str, default="cuda:0")

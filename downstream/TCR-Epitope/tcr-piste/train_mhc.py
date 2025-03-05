@@ -15,8 +15,8 @@ from torch import nn
 from torch.utils.data import Dataset, WeightedRandomSampler
 from tqdm import tqdm
 
-import plm_multimer
-from plm_multimer.model.esm2 import ESM2
+import mint
+from mint.model.esm2 import ESM2
 
 # from tqdm.notebook import tqdm
 
@@ -45,7 +45,7 @@ class PPIDataset(Dataset):
 
 class PPICollateFn:
     def __init__(self, use_mhc=True, truncation_seq_length=None):
-        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = mint.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
         self.use_mhc = use_mhc
 

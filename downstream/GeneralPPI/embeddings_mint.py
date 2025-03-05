@@ -11,8 +11,8 @@ from tasks import get_task_datasets
 from torch import nn
 from tqdm import tqdm
 
-import plm_multimer
-from plm_multimer.model.esm2 import ESM2
+import mint
+from mint.model.esm2 import ESM2
 
 CONFIG_DICT_PATH = (
     "/data/cb/scratch/varun/esm-multimer/esm-multimer/models/esm2_t33_650M_UR50D.json"
@@ -21,7 +21,7 @@ CONFIG_DICT_PATH = (
 
 class PPICollateFn:
     def __init__(self, truncation_seq_length=None):
-        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = mint.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
@@ -60,7 +60,7 @@ class PPICollateFn:
 
 class MutationalPPICollateFn:
     def __init__(self, truncation_seq_length=None):
-        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = mint.data.Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
 
     def __call__(self, batches):
@@ -125,7 +125,7 @@ def get_sequences_by_chain(chain_ids, amino_acids):
 
 class PDBBindCollateFn:
     def __init__(self, max_length=1024):
-        self.alphabet = plm_multimer.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = mint.data.Alphabet.from_architecture("ESM-1b")
         self.max_length = max_length
 
     def __call__(self, batches):
@@ -437,7 +437,7 @@ if __name__ == "__main__":
 
     # General args
     parser.add_argument("--task", type=str, default="HumanPPI")
-    parser.add_argument("--model_name", type=str, default="plm-multimer")
+    parser.add_argument("--model_name", type=str, default="mint")
     parser.add_argument("--bs", type=int, default=4)
     parser.add_argument("--max_seq_length", type=int, default=2048)
     parser.add_argument("--devices", type=str, default="0")

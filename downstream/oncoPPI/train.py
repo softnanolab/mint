@@ -136,7 +136,7 @@ def get_embeddings(model_name):
     return train_embs, test_embs
 
 
-train, test = get_embeddings("esm-m-f-140")
+train, test = get_embeddings("mint")
 
 train_targets = pd.read_csv("processed_data_cs.csv")["target"].values
 test_targets = pd.read_csv("processed_data_val_cs.csv")["target"].values
