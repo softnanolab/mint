@@ -51,7 +51,7 @@ wget https://huggingface.co/varunullanat2012/mint/resolve/main/mint.ckpt
 
 ### Generating embeddings
 
-We suggest generating embeddings from a CSV file containing the interacting sequences like this one [here](./data/protein_sequences.csv). Next, simply execute the following code to get embeddings. 
+We suggest generating embeddings from a CSV file containing the interacting sequences like this one [here](./data/protein_sequences.csv). Next, simply execute the following code to get average embeddings over all input sequences. 
 
 ```
 import torch
@@ -73,9 +73,21 @@ embeddings = wrapper(chains, chain_ids)  # Generate embeddings
 print(embeddings.shape) # Should be of shape (2, 1280)
 ```
 
+For PPIs with two interacting sequences, we recommend using the `sep_chains=True` argument in the wrapper class. This gets the sequence-level embedding for both sequences, and returns it concatenated with the same order as in the input. 
+
+```
+wrapper = MINTWrapper(cfg, checkpoint_path, sep_chains=True, device=device)
+
+chains, chain_ids = next(iter(loader)) # Get the first batch
+chains = chains.to(device)
+chain_ids = chain_ids.to(device)
+embeddings = wrapper(chains, chain_ids)  # Generate embeddings
+print(embeddings.shape) # Should be of shape (2, 2560)
+```
+
 ### Finetuning 
 
-To finetune our model on a new supervised dataset, simply set the `freeze_percent` parameter to anything other than 1. Setting it to 0.5 means the 50% of the model layers can be trained. For example, 
+To finetune our model on a new supervised dataset, simply set the `freeze_percent` parameter to anything other than 1. Setting it to 0.5 means the last 50% of the model layers can be trained. For example, 
 
 ```
 import torch
