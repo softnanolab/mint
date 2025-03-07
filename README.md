@@ -2,7 +2,7 @@
   Learning the language of protein-protein interactions 
 </h1>
 
-## 🧬 Overview of MINT
+## 🌿 Overview of MINT
 
 MINT (Multimeric INteraction Transformer) is a Protein Language Model (PLM) designed for **contextual and scalable** modeling of interacting protein sequences. Trained on a large, curated set of **96 million protein-protein interactions (PPIs)** from the STRING database, MINT outperforms existing PLMs across diverse tasks and protein types, including:
 
