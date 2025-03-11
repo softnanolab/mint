@@ -426,7 +426,7 @@ if __name__ == "__main__":
 
     cfg = argparse.Namespace()
     with open(
-        f"/data/cb/scratch/varun/esm-multimer/esm-multimer/models/esm2_t33_650M_UR50D.json"
+        f"/data/cb/scratch/varun/mint/mint/models/esm2_t33_650M_UR50D.json"
     ) as f:
         cfg.__dict__.update(json.load(f))
     esm_model = FlabWrapper(
@@ -453,14 +453,14 @@ if __name__ == "__main__":
             save_last=True,
             mode="max",
             save_top_k=1,
-            dirpath=os.path.join(os.getcwd(), "logs", "esm-m-tcr_seq"),
+            dirpath=os.path.join(os.getcwd(), "logs", "mint-tcr_seq"),
         )
         earlystop = EarlyStopping(monitor="valid/auc_avg", patience=15, mode="max")
         trainer = pl.Trainer(
             max_epochs=config.training.epochs,
             gpus=[7],
             callbacks=[checkpoint, earlystop],
-            default_root_dir=os.path.join(os.getcwd(), "logs", "esm-m-tcr_seq"),
+            default_root_dir=os.path.join(os.getcwd(), "logs", "mint-tcr_seq"),
         )
 
         print(

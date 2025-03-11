@@ -15,7 +15,7 @@ import mint
 from mint.model.esm2 import ESM2
 
 CONFIG_DICT_PATH = (
-    "/data/cb/scratch/varun/esm-multimer/esm-multimer/models/esm2_t33_650M_UR50D.json"
+    "/data/cb/scratch/varun/mint/mint/models/esm2_t33_650M_UR50D.json"
 )
 
 

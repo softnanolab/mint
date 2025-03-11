@@ -353,7 +353,7 @@ def main(args):
 
         cfg = argparse.Namespace()
         with open(
-            f"/data/cb/scratch/varun/esm-multimer/esm-multimer/models/esm2_t33_650M_UR50D.json"
+            f"/data/cb/scratch/varun/mint/mint/models/esm2_t33_650M_UR50D.json"
         ) as f:
             cfg.__dict__.update(json.load(f))
 
