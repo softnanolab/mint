@@ -2,7 +2,7 @@
 
 This folder contains information on running baseline PLMs and MINT on six different PPI prediction tasks. 
 
-Note: We choose to cache the embeddings from each model on every input data point across all tasks (using `embeddings_plm_multimer.py` and `embeddings_baselines.py`) instead of re-running the models for every experimental repeat. 
+Note: We choose to cache the embeddings from each model on every input data point across all tasks (using `embeddings_mint.py` and `embeddings_baselines.py`) instead of re-running the models for every experimental repeat. 
 
 ### Baseline models
 
