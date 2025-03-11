@@ -41,7 +41,7 @@ pip install -e .
 python -c "import mint; print('Success')" 
 ```
 
-4. Download the model checkpoint from and note where the path where it is stored.
+4. Download the model checkpoint and note the file path where it is stored.
 
 ```
 wget https://huggingface.co/varunullanat2012/mint/resolve/main/mint.ckpt
