@@ -85,6 +85,10 @@ embeddings = wrapper(chains, chain_ids)  # Generate embeddings
 print(embeddings.shape) # Should be of shape (2, 2560)
 ```
 
+### Binary PPI classification
+
+Coming soon!
+
 ### Finetuning 
 
 To finetune our model on a new supervised dataset, simply set the `freeze_percent` parameter to anything other than 1. Setting it to 0.5 means the last 50% of the model layers can be trained. For example, 
