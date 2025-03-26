@@ -151,7 +151,7 @@ def get_task_datasets(task, test_run=False, return_metadata=False):
         output_size = None
         monitor_metric = None
     elif task == "MutationalPPI":
-        train_fl = "./mutants/processed_data.csv"
+        train_fl = "./mutational-ppi/processed_data.csv"
         val_fl = None
         test_fl = None
         task_type = "bc"
@@ -163,9 +163,9 @@ def get_task_datasets(task, test_run=False, return_metadata=False):
         output_size = None
         monitor_metric = None
     elif task == "MutationalPPI_cs":
-        train_fl = "./mutants/processed_data_cs.csv"
-        val_fl = "./mutants/processed_data_val_cs.csv"
-        test_fl = "./mutants/processed_data_test_cs.csv"
+        train_fl = "./mutational-ppi/processed_data_cs.csv"
+        val_fl = "./mutational-ppi/processed_data_val_cs.csv"
+        test_fl = "./mutational-ppi/processed_data_test_cs.csv"
         task_type = "bc"
         col1 = "seq1"
         col2 = "seq2"
@@ -195,7 +195,7 @@ def get_task_datasets(task, test_run=False, return_metadata=False):
             )
         else:
             test_dataset = None
-    elif task == "Pdb-bind" or task == "crispr":
+    elif task == "Pdb-bind":
         train_dataset = MultiCSVDataset(train_fl, col1, col2, target_col, test_run)
         val_dataset = (
             MultiCSVDataset(val_fl, col1, col2, target_col, test_run) if val_fl != None else None

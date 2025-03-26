@@ -46,8 +46,3 @@ dependencies:
       - scikit-learn==1.0.2
       - scipy==1.7.1
       - sentencepiece==0.2.0
-      - torch-cluster==1.6.1
-      - torch-geometric==2.3.1
-      - torch-scatter==2.1.1
-      - torchmetrics==0.11.4
-

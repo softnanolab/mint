@@ -15,7 +15,7 @@ import mint
 from mint.model.esm2 import ESM2
 
 CONFIG_DICT_PATH = (
-    "/data/cb/scratch/varun/mint/mint/models/esm2_t33_650M_UR50D.json"
+    "../../data/esm2_t33_650M_UR50D.json"
 )
 
 
@@ -376,7 +376,7 @@ def main(args):
             collate_fn=MutationalPPICollateFn(args.max_seq_length),
             shuffle=False,
         )
-    elif args.task == "Pdb-bind" or args.task == "crispr":
+    elif args.task == "Pdb-bind":
         emb_fn = get_embeddings
         train_loader = torch.utils.data.DataLoader(
             train_dataset,
@@ -415,15 +415,15 @@ def main(args):
             )
 
     train_emb_file_name = f"{save_dir}/train.pt"
-    # if not os.path.isfile(train_emb_file_name):
-    #     train_inputs = emb_fn(model, train_loader, default_device, args.cat)
-    #     torch.save(train_inputs, train_emb_file_name)
+    if not os.path.isfile(train_emb_file_name):
+        train_inputs = emb_fn(model, train_loader, default_device, args.cat)
+        torch.save(train_inputs, train_emb_file_name)
 
-    # val_emb_file_name = train_emb_file_name.replace('train', 'val')
-    # if val_dataset is not None:
-    #     if not os.path.isfile(val_emb_file_name):
-    #         val_inputs = emb_fn(model, val_loader, default_device, args.cat)
-    #         torch.save(val_inputs, val_emb_file_name)
+    val_emb_file_name = train_emb_file_name.replace('train', 'val')
+    if val_dataset is not None:
+        if not os.path.isfile(val_emb_file_name):
+            val_inputs = emb_fn(model, val_loader, default_device, args.cat)
+            torch.save(val_inputs, val_emb_file_name)
 
     test_emb_file_name = train_emb_file_name.replace("train", "test")
     if test_dataset is not None:
