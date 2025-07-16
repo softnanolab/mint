@@ -72,7 +72,6 @@ class CollateFn:
             tokens[i, : len(seq_encoded)] = seq
         return tokens
 
-
 class MINTWrapper(nn.Module):
     def __init__(
         self,
@@ -122,26 +121,32 @@ class MINTWrapper(nn.Module):
         return mean_chain_out
 
     def forward(self, chains, chain_ids):
+        # Create a mask to exclude special tokens
         mask = (
-            (~chains.eq(self.model.cls_idx))
-            & (~chains.eq(self.model.eos_idx))
-            & (~chains.eq(self.model.padding_idx))
+            (~chains.eq(self.model.cls_idx)) &
+            (~chains.eq(self.model.eos_idx)) &
+            (~chains.eq(self.model.padding_idx))
         )
+    
+        # Get model representations
         chain_out = self.model(chains, chain_ids, repr_layers=[33])["representations"][33]
+    
         if self.sep_chains:
-            mask_chain_0 = (chain_ids.eq(0) & mask).unsqueeze(-1).expand_as(chain_out)
-            mask_chain_1 = (chain_ids.eq(1) & mask).unsqueeze(-1).expand_as(chain_out)
-            mean_chain_out_0 = self.get_one_chain(
-                chain_out, mask_chain_0, (chain_ids.eq(0) & mask)
-            )
-            mean_chain_out_1 = self.get_one_chain(
-                chain_out, mask_chain_1, (chain_ids.eq(1) & mask)
-            )
-            return torch.cat((mean_chain_out_0, mean_chain_out_1), -1)
+            max_chain_id = chain_ids.max().item()
+            mean_chain_outs = []
+    
+            for chain_id in range(max_chain_id + 1):
+                chain_mask = (chain_ids == chain_id) & mask
+                chain_mask_exp = chain_mask.unsqueeze(-1).expand_as(chain_out)
+                mean_chain_out = self.get_one_chain(chain_out, chain_mask_exp, chain_mask)
+                mean_chain_outs.append(mean_chain_out)
+    
+            # Concatenate outputs from each chain along the last dimension
+            return torch.cat(mean_chain_outs, dim=-1)
         else:
             mask_expanded = mask.unsqueeze(-1).expand_as(chain_out)
             masked_chain_out = chain_out * mask_expanded
             sum_masked = masked_chain_out.sum(dim=1)
-            mask_counts = mask.sum(dim=1, keepdim=True).float()  # Convert to float for division
+            mask_counts = mask.sum(dim=1, keepdim=True).float()
             mean_chain_out = sum_masked / mask_counts
             return mean_chain_out
