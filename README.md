@@ -73,7 +73,7 @@ embeddings = wrapper(chains, chain_ids)  # Generate embeddings
 print(embeddings.shape) # Should be of shape (2, 1280)
 ```
 
-For PPIs with two interacting sequences, we recommend using the `sep_chains=True` argument in the wrapper class. This gets the sequence-level embedding for both sequences, and returns it concatenated with the same order as in the input. 
+However, we **recommend** using the `sep_chains=True` argument in the wrapper class for maximum performance on downstream tasks. This gets the sequence-level embedding for **all sequences**, and returns it concatenated in the same order as the input. 
 
 ```
 wrapper = MINTWrapper(cfg, checkpoint_path, sep_chains=True, device=device)
