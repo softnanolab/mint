@@ -160,3 +160,10 @@ We provide several examples highlighting the use cases of MINT on various superv
   publisher={Cold Spring Harbor Laboratory}
 }
 ```
+
+## Using the CATH Database of Domains
+
+## Accessing the Database:
+
+For entries in the PDB, domains have been labelled by the Orengo Group et al. and the data is available here to download: https://www.cathdb.info/download
+
