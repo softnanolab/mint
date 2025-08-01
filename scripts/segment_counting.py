@@ -4,6 +4,7 @@ from pathlib import Path
 import fire
 import math
 from tqdm import tqdm
+from typing import Dict
 
 BASE_DIR = Path(__file__).parent.parent
 FIRST_SEGMENT_COLUMN = 3
@@ -15,6 +16,7 @@ class ProcessingSegmentsInDomains:
         self.all_data = self._get_data()
         self.multi_domain_proteins = self._get_multi_domain_proteins()
         self.domain_dict = self._get_domain_dict()
+        
 
     def _get_data(self) -> pd.DataFrame:
         """Returns a data frame with all the data entries of the CATH database in the cath-domain-boundaries.txt file from the Orengo
@@ -50,7 +52,7 @@ class ProcessingSegmentsInDomains:
 
         return self.all_data[~self.all_data["domain"].str.contains("D01")]
 
-    def _get_domain_dict(self) -> dict[str, pd.DataFrame]:
+    def _get_domain_dict(self) -> Dict[str, pd.DataFrame]:
         """Initialises a dictionary 'self.domain_dict' which has keys [D01, D02, ... D20] representing collections of protein chains
         in the PDB with 01, 02, ... 20 domains respectively. The values are dataframes which include the PDB IDs and domain boundary
         information for each protein chain with 1,2, ... 20 domains respectively."""
@@ -67,8 +69,48 @@ class ProcessingSegmentsInDomains:
             domain_dict[key] = domain_dict[key].dropna(axis=1, how="all")
 
         return domain_dict
+    
+    def _get_chains_with_contiguous_domains(self) -> pd.DataFrame:
+        """Returns a dataframe where the rows relate only to chains with contiguous domains"""
 
-    def counting_segments_in_domains(self) -> dict[int, int]:
+        columns = self.all_data.columns
+        row_dicts = []  # collect row dicts instead of concatenating DataFrames
+
+        for key, df in tqdm(self.domain_dict.items(), desc="Domain Types", leave=True):
+            print(f"\nProcessing: {key}")
+            last_two_digits = key[-2:]  # get last two characters as string
+            domains = int(last_two_digits)
+
+            for index, row in tqdm(
+                df.iterrows(), total=len(df), desc=f"Processing {key}", leave=False
+            ):
+                segment_column = FIRST_SEGMENT_COLUMN
+                domain_counter = domains
+                while domain_counter > 0:
+                    number_of_segments = int(row.iloc[segment_column])
+                    if number_of_segments == 1:
+                        segment_column = (
+                            segment_column + int(6 * number_of_segments) + 1
+                        )
+                        domain_counter -= 1
+
+                    else:
+                        break
+
+                    if domain_counter == 0:
+                        row_dicts.append(row.to_dict())  # fast row collection
+
+        chains_with_contiguous_domains = pd.DataFrame(row_dicts, columns=columns)
+        print(chains_with_contiguous_domains)
+    
+#    def counting_chains_of_contiguous_domains(self) -> Dict[int, int]:
+#        """Returns a dictionary containing (no. contiguous domains within a chain):(frequency)"""
+
+
+
+
+
+    def counting_domains_of_segments(self) -> Dict[int, int]:
         """Returns a dictionary containing (no. segments in a domain):(frequency)"""
 
         domain_lengths = (
@@ -104,42 +146,6 @@ class ProcessingSegmentsInDomains:
 
         return domain_lengths
 
-    def counting_contiguous_domains_in_chains(self) -> dict[int, int]:
-        """Returns a dictionary containing (no. of contiguous domains within a protein that only contains single
-        domains in a chain that only contains contiguous domains):(frequency)"""
-
-        columns = self.all_data.columns
-        chains_with_contiguous_domains = pd.DataFrame(columns=columns)
-
-        for key, df in tqdm(self.domain_dict.items(), desc="Domain Types", leave=True):
-            print(f"\nProcessing: {key}")
-            last_two_digits = key[-2:]  # get last two characters as string
-            domains = int(last_two_digits)
-
-            for index, row in tqdm(
-                df.iterrows(), total=len(df), desc=f"Processing {key}", leave=False
-            ):
-                segment_column = FIRST_SEGMENT_COLUMN
-                domain_counter = domains
-                while domain_counter > 0:
-                    number_of_segments = int(row.iloc[segment_column])
-                    if number_of_segments == 1:
-                        segment_column = (
-                            segment_column + int(6 * number_of_segments) + 1
-                        )
-                        domain_counter -= 1
-
-                    else:
-                        break
-
-                    if domain_counter == 0:
-                        row = row.to_frame().T  # Convert Series to one-row DataFrame
-                        chains_with_contiguous_domains = pd.concat(
-                            [chains_with_contiguous_domains, row], ignore_index=True
-                        )
-
-        print(chains_with_contiguous_domains)
-
     def checking_counting_segments_in_domains(self) -> None:
         """Returns the number of domains in the entire database by processing each line, extracting the number of domains in
         the DXX string and adding it to a counter. Also returns the total number of domains processed in the counting_segments
@@ -154,7 +160,7 @@ class ProcessingSegmentsInDomains:
             total_domains += domains * (df.shape[0])
 
         print(
-            f"The sum of the frequencies for the number of domains with n segments: {sum(self.counting_segments_in_domains().values())}"
+            f"The sum of the frequencies for the number of domains with n segments: {sum(self.counting_domains_of_segments().values())}"
         )
         print(
             f"The total number of domains in the CATH database: {total_domains}"
@@ -168,7 +174,7 @@ class ProcessingSegmentsInDomains:
 
         # selecting the data relating to the specified type of pseudomultimer
         if pseudochains == "segment":
-            pseudomultimers = self.counting_segments_in_domains()
+            pseudomultimers = self.counting_domains_of_segments()
             title = "Breakdown of the size and frequency of pseudomultimers where: pseudomulitmer = domain, pseudochain = segment"
         elif pseudochains == "domain":
             pseudomultimers = self.counting_contiguous_domains_in_chains()
@@ -192,7 +198,7 @@ class ProcessingSegmentsInDomains:
         """Returns the number of pseudomultimers of the type that is specified"""
 
         if pseudochains == "segments":
-            pseudomultimers = self.counting_segments_in_domains()
+            pseudomultimers = self.counting_domains_of_segments()
         elif pseudochains == "domains":
             pseudomultimers = self.counting_contiguous_domains_in_chains()
             count = 0
@@ -209,7 +215,7 @@ class ProcessingSegmentsInDomains:
         """Returns the number of subsets of pseudochains that can be made from each pseudomultimer of the specified type"""
 
         if pseudochains == "segments":
-            pseudomultimers = self.counting_segments_in_domains()
+            pseudomultimers = self.counting_domains_of_segments()
         elif pseudochains == "domains":
             pseudomultimers = self.counting_contiguous_domains_in_chains()
             count = 0
