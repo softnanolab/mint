@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).parent.parent
 FIRST_SEGMENT_COLUMN = 3
 
 
-class ProcessingSegmentsInDomains:
+class ProcessingCATH:
     def __init__(self, database_path=BASE_DIR, first_segment_column=FIRST_SEGMENT_COLUMN):
         """
         Initializes the ProcessingSegmentsInDomains object.
@@ -411,4 +411,4 @@ class ProcessingSegmentsInDomains:
 
 
 if __name__ == "__main__":
-    fire.Fire(ProcessingSegmentsInDomains)
+    fire.Fire(ProcessingCATH)
