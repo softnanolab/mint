@@ -1,0 +1,24 @@
+#---------------------------------------------------------------------
+# FILE NAME:    CathDomall.v4.4.0
+# FILE DATE:    16.12.2024
+#
+# CATH VERSION: v4.4.0
+# VERSION DATE: 16.12.2024
+#
+# FILE FORMAT:  Cath Domall File (CDF) Format 2.0
+#
+# FILE DESCRIPTION:
+# The Cath Domall file describes domain boundaries for entries in the CATH database.
+# Only PDB chains that have been split into domains have a CathDomall entry.
+# Domains that are composed of whole PDB chains are not found in this file.
+#
+# See 'README.file_formats' for file format information
+# OR
+# http://www.biochem.ucl.ac.uk/bsm/cath/formats/v2.0/CathDomall.html
+#---------------------------------------------------------------------
+101mA D01 F00  1  A    0 - A  153 -
+102lA D01 F00  1  A    1 - A  162 -
+10gsA D02 F01  2  A    2 - A   78 -  A  187 - A  208 -  1  A   79 - A  186 -  A  209 - A  209 - (1)
+10mhA D02 F00  2  A    1 - A  186 -  A  285 - A  327 -  1  A  187 - A  284 -
+12e8M D02 F01  1  M    1 - M  107 -  1  M  108 - M  211 -  M  212 - M  214 - (3)
+13gsA D02 F02  2  A    2 - A   78 -  A  187 - A  208 -  1  A   79 - A  186 -  A    0 - A    1 - (2)  A  209 - A  209 - (1)

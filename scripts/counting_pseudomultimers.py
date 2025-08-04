@@ -11,7 +11,7 @@ FIRST_SEGMENT_COLUMN = 3
 
 
 class ProcessingCATH:
-    def __init__(self, database_path=BASE_DIR, first_segment_column=FIRST_SEGMENT_COLUMN):
+    def __init__(self, database_path=BASE_DIR / "resources/cath_domain_boundaries.txt", first_segment_column=FIRST_SEGMENT_COLUMN):
         """
         Initializes the ProcessingSegmentsInDomains object.
 
@@ -51,7 +51,7 @@ class ProcessingCATH:
             []
         )  # create an empty list which we will append dictionaries of each row to in order to create a DataFrame
 
-        with open(self.database_path / "resources/cath_domain_boundaries.txt", "r") as f:
+        with open(self.database_path, "r") as f:
             lines = f.readlines()
 
         for line in lines:
@@ -215,7 +215,7 @@ class ProcessingCATH:
         # being measured in segments
 
         # Iterating over each dataframe containing X domain (X=01 to 20)
-        for key, df in self.domain_dict.items():
+        for key, df in self.domain_dict().items():
             print(f"\nProcessing: {key}")
             last_two_digits = key[-2:]  # get last two characters as string
             domains = int(last_two_digits)
