@@ -16,8 +16,8 @@ class ProcessingCATH:
         Initializes the ProcessingSegmentsInDomains object.
 
         Args:
-            database_path (Path): Path to the root directory containing
-                'resources/cath_domain_boundaries.txt'. Defaults to BASE_DIR.
+            database_path (Path): Path to the database of domain boundaries you
+            want to process. Defaults to BASE_DIR / "resources/cath_domain_boundaries.txt".
             first_segment_column (str): Column name for the first domain segment.
                 Used for downstream processing. Defaults to FIRST_SEGMENT_COLUMN.
 
@@ -81,7 +81,7 @@ class ProcessingCATH:
 
         return all_data
 
-    def domain_dict(self) -> Dict[str, pd.DataFrame]:
+    def domain_dict(self, data = None) -> Dict[str, pd.DataFrame]:
         """
         Creates and returns a dictionary of domain groupings from the CATH dataset.
 
@@ -90,7 +90,9 @@ class ProcessingCATH:
         number of domains.
 
         Args:
-            None
+            data (pd.DataFrame): a DataFrame that contains the domain boundaries you
+            want to process. Defaults to None, which means you would like to process
+            self.all_data.
 
         Returns:
             Dict[str, pd.DataFrame]: A dictionary where keys are domain labels ('D01'...'D20'),
@@ -98,12 +100,19 @@ class ProcessingCATH:
             for chains with that number of domains. Columns with all missing values are dropped.
         """
 
+        if data is None:
+            data = self.all_data
+        
+        elif not isinstance(data, pd.DataFrame):
+            raise TypeError("data must be a pd.DataFrame object")
+
         domain_dict = {}
 
-        for i in range(1, 21):
-            domain_key = f"D{i:02}"
-            domain_dict[domain_key] = self.all_data[
-                self.all_data["domain"].str.contains(domain_key)
+        domain_labels = set(data["domain"])
+
+        for domain_key in domain_labels:
+            domain_dict[domain_key] = data[
+                data["domain"].str.contains(domain_key)
             ]
 
         for key in domain_dict:
@@ -174,7 +183,14 @@ class ProcessingCATH:
         return chains_with_contiguous_domains
 
     def counting_chains_of_contiguous_domains(self) -> Dict[int, int]:
-        """Returns a dictionary containing (no. contiguous domains within a chain):(frequency)"""
+        """Counts how many chains there are with n domains which are all contiguous.
+
+        Args:
+            None
+
+        Returns:
+            Dict[int, int]:  A dictionary containing
+            (no. contiguous domains within a chain):(frequency)"""
 
         chain_lengths = (
             {}

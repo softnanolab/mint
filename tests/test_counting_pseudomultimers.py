@@ -32,14 +32,10 @@ def test_get_data():
 
 def test_domain_dict():
     # Test creation of dictionary of a dictionary containing keys: ["D01" ... "D20"] and values: DataFrames containing chains 
-    domain_groups = test_object.domain_dict()
+    domain_groups = test_object.domain_dict(data= test_object.all_data)
 
     # Check not None
     assert domain_groups is not None
-
-    # Check that we have keys from D01 to D20
-    expected_keys = [f"D{i:02}" for i in range(1, 21)]
-    assert list(domain_groups.keys()) == expected_keys
 
     # Checking each value of each key
     for key, df in domain_groups.items():
@@ -47,10 +43,8 @@ def test_domain_dict():
         # Check that each value is a DataFrame
         assert isinstance(df, pd.DataFrame)
 
-        # Some of the value DataFrames will be empty
-        if not df.empty:
-            # Check that every row's 'domain' column contains the domain key
-            assert df["domain"].str.contains(key).all(), f"Unexpected domain in {key}"
+        # Check that every row's 'domain' column contains the domain key
+        assert df["domain"].str.contains(key).all(), f"Unexpected domain in {key}"
         
         if key == "D01":
             # Check that there are 2 rows in the DataFrame for chains with 1 domain
