@@ -42,3 +42,4 @@ test.ipynb
 *.ckpt
 *.pt
 cath_domain_boundaries.txt
+chain_level_pseudomultimers.json
