@@ -11,7 +11,11 @@ FIRST_SEGMENT_COLUMN = 3
 
 
 class ProcessingCATH:
-    def __init__(self, database_path=BASE_DIR / "resources/cath_domain_boundaries.txt", first_segment_column=FIRST_SEGMENT_COLUMN):
+    def __init__(
+        self,
+        database_path=BASE_DIR / "resources/cath_domain_boundaries.txt",
+        first_segment_column=FIRST_SEGMENT_COLUMN,
+    ):
         """
         Initializes the ProcessingSegmentsInDomains object.
 
@@ -81,7 +85,7 @@ class ProcessingCATH:
 
         return all_data
 
-    def domain_dict(self, data = None) -> Dict[str, pd.DataFrame]:
+    def domain_dict(self, data=None) -> Dict[str, pd.DataFrame]:
         """
         Creates and returns a dictionary of domain groupings from the CATH dataset.
 
@@ -102,7 +106,7 @@ class ProcessingCATH:
 
         if data is None:
             data = self.all_data
-        
+
         elif not isinstance(data, pd.DataFrame):
             raise TypeError("data must be a pd.DataFrame object")
 
@@ -111,9 +115,7 @@ class ProcessingCATH:
         domain_labels = set(data["domain"])
 
         for domain_key in domain_labels:
-            domain_dict[domain_key] = data[
-                data["domain"].str.contains(domain_key)
-            ]
+            domain_dict[domain_key] = data[data["domain"].str.contains(domain_key)]
 
         for key in domain_dict:
             domain_dict[key] = domain_dict[key].dropna(axis=1, how="all")

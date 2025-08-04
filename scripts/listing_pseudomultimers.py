@@ -22,8 +22,10 @@ class ListingPseudomultimers(ProcessingCATH):
         chain level pseudomultimers.
             
         Args:
+            None
             
         Returns:
+            Dict 
         '''
 
         
@@ -58,15 +60,38 @@ class ListingPseudomultimers(ProcessingCATH):
         with open(BASE_DIR / "resources/chain_level_pseudomultimers.json", "w") as json_file:
             json.dump(self.chain_level_pseudomultimer_dict(), json_file, indent=4)
 
-                        
+    def contiguous_domain_length_histogram(self):
+        '''
+        Plotting a histogram for the length of each contiguous domain which is contained within a chain, made
+        solely from contiguous domain
 
+        Args:
+            None
+        
+        Returns:
+            None
+        '''
+        contiguous_domain_lengths = []
 
+        for no_domains, pdbs in self.chain_level_pseudomultimer_dict().items():
+            for pdb_id, chains in pdbs.items():
+                for chain_id, domains in chains.items():
+                    for domain, (start, end) in domains.items():
+                        length = end - start + 1  # inclusive
+                        contiguous_domain_lengths.append(length)
 
+        # Plot
+        plt.figure(figsize=(10, 6))
+        plt.hist(contiguous_domain_lengths, bins=50, edgecolor='black')
+        plt.title("Histogram of Domain Lengths", fontsize=14)
+        plt.xlabel("Domain Length (residues)", fontsize=12)
+        plt.ylabel("Frequency", fontsize=12)
+        plt.grid(True, linestyle='--', alpha=0.6)
 
-
-
-            
-
+        # Set x-axis limits to zoom in (e.g., focus on lengths < 1000)
+        plt.xlim(0, 1000)  # adjust if needed
+        plt.savefig(BASE_DIR / "resources/domain_length_histogram.png")
+        plt.show()               
 
 
 if __name__ == "__main__":
