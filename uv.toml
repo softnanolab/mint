@@ -1,0 +1,20 @@
+# Use the system Python interpreter
+python-preference = "system"
+
+# Enable dependency resolution with pre-release versions
+prerelease = "if-necessary"
+
+# Use the fastest available index
+index-strategy = "unsafe-best-match"
+
+# Configure PyTorch index for CUDA support
+[[index]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu118"
+explicit = true
+
+# Enable native compilation for better performance
+native-tls = true
+
+# Configure build settings
+compile-bytecode = true

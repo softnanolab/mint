@@ -22,28 +22,68 @@ MINT (Multimeric INteraction Transformer) is a Protein Language Model (PLM) desi
 
 ## 🖥️ Installation 
 
-1. Create a new [conda](https://docs.anaconda.com/miniconda/install/) environment from the provided `enviroment.yml` file. 
+### Option 1: Using uv (Recommended)
 
-```
-conda env create --name mint --file=environment.yml
-```
+1. Install [uv](https://docs.astral.sh/uv/) if you haven't already:
 
-2. Activate the enviroment and install the package from source.
-
-```
-conda activate mint
-pip install -e .
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-3. Check if you are able to import the package.
+2. Create a virtual environment and install the package:
 
+```bash
+# Create virtual environment with Python 3.8+
+uv venv --python 3.8
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install the package with all dependencies
+uv pip install -e .
+
+# Or install with specific extras
+uv pip install -e ".[dev,jupyter,bio]"
 ```
+
+3. Check if you are able to import the package:
+
+```bash
 python -c "import mint; print('Success')" 
 ```
 
-4. Download the model checkpoint and note the file path where it is stored.
+### Option 2: Using conda (Legacy)
 
+**Note**: The conda environment has been updated to use PyTorch 2.0+. If you need the old PyTorch 1.12 environment, please use the provided working environment in the issue description.
+
+1. Create a new [conda](https://docs.anaconda.com/miniconda/install/) environment:
+
+```bash
+conda create -n mint python=3.8
+conda activate mint
 ```
+
+2. Install PyTorch 2.0+ with CUDA support:
+
+```bash
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+```
+
+3. Install the package from source:
+
+```bash
+pip install -e .
+```
+
+4. Check if you are able to import the package:
+
+```bash
+python -c "import mint; print('Success')" 
+```
+
+### Download Model Checkpoint
+
+Download the model checkpoint and note the file path where it is stored:
+
+```bash
 wget https://huggingface.co/varunullanat2012/mint/resolve/main/mint.ckpt
 ```
 
