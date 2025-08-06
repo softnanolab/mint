@@ -7,14 +7,14 @@ from tqdm import tqdm
 from typing import Dict
 import json
 
-from counting_pseudomultimers import ProcessingCATH
+from scripts.counting_pseudomultimers import ProcessingCATH
 
 BASE_DIR = Path(__file__).parent.parent
 FIRST_SEGMENT_COLUMN = 3
 
 class ListingPseudomultimers(ProcessingCATH):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, data=None):
+        super().__init__(database_path=data)
 
     def chain_level_pseudomultimer_dict(self):
         '''
@@ -27,7 +27,6 @@ class ListingPseudomultimers(ProcessingCATH):
         Returns:
             Dict 
         '''
-
         
         raw_chain_level_pseudomultimers = self.domain_dict(data= self.chains_with_contiguous_domains())
 
@@ -57,6 +56,15 @@ class ListingPseudomultimers(ProcessingCATH):
         return chain_level_pseudomultimers
         
     def chain_level_pseudomultimer_json(self):
+        '''
+        Creating a json file with all the information about chain level pseudomultimers from CATH
+
+        Args:
+            None
+        
+        Returns:
+            None
+        '''
         with open(BASE_DIR / "resources/chain_level_pseudomultimers.json", "w") as json_file:
             json.dump(self.chain_level_pseudomultimer_dict(), json_file, indent=4)
 
