@@ -6,8 +6,31 @@ import fire
 BASE_DIR = Path(__file__).parent.parent
 
 
-def process_cath_domains(output_path: str = None) -> None:
-    """Parses the CathDomall file into a nested dictionary structure.
+def process_cath_domains(input_path = BASE_DIR / "resources/cath_domain_boundaries.txt", output_path: str = None) -> None:
+    """Parses the CathDomall file into a nested dictionary structure which looks like:
+
+    {
+    "pdb_id" : {
+                "chain_id" : [
+                             {
+                             "domain_idx" : 1
+                             "segments" : [
+                                         {
+                                         "segment_idx" : 1
+                                         "start" : starting residue index
+                                         "end" : ending residue index
+                                         },
+
+                                         {
+                                         ...
+                                         },
+                                         ...
+                                        ]
+                             }
+                            ]
+                }
+    
+    }
 
     Args:
         output_path (str): The path to save the parsed data.
@@ -18,12 +41,11 @@ def process_cath_domains(output_path: str = None) -> None:
     if output_path is None:
         output_path = BASE_DIR / "resources/cath_domain_boundaries.json"
 
-    database_path = BASE_DIR / "resources/cath_domain_boundaries.txt"
-    assert database_path.exists(), f"Database file not found at {database_path}"
+    assert input_path.exists(), f"Database file not found at {input_path}"
 
     result: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
 
-    with open(database_path, "r") as f:
+    with open(input_path, "r") as f:
         for line_num, raw_line in enumerate(f, 1):
             line = raw_line.strip()
             if not line or line.startswith("#"):
@@ -45,27 +67,21 @@ def process_cath_domains(output_path: str = None) -> None:
                 if idx >= len(tokens):
                     break  # safety
                 num_segments = int(tokens[idx])
-                idx += 1
+                idx += 1 # enter into the segment block
 
                 segments = []
                 for segment_idx in range(1, num_segments + 1):
                     if idx + 5 >= len(tokens):
                         break  # malformed – stop processing
                     # token pattern: chain start_i insert_start chain end_i insert_end
-                    _chain_start = tokens[idx]
-                    start_res = int(tokens[idx + 1])
-                    _insert_start = tokens[idx + 2]
-                    _chain_end = tokens[idx + 3]
-                    end_res = int(tokens[idx + 4])
-                    _insert_end = tokens[idx + 5]
                     segments.append(
                         {
                             "segment_idx": segment_idx,
-                            "start": start_res,
-                            "end": end_res,
+                            "start": int(tokens[idx + 1]), # access the start residue index in the segment block
+                            "end": int(tokens[idx + 4]), # access the end residude index in the segment block
                         }
                     )
-                    idx += 6
+                    idx += 6 # access the next segment block
 
                 result.setdefault(pdb_id, {}).setdefault(chain_id, []).append(
                     {
