@@ -17,6 +17,9 @@ source .venv/bin/activate
 # 3) Install from pyproject.toml
 uv pip install -e .
 
+# (Optional) Install the dev dependencies
+uv pip install -e .[dev]
+
 # 4) Verify
 python -c "import mint; print('Success')"
 ```
