@@ -2,41 +2,23 @@
   Learning the language of protein-protein interactions 
 </h1>
 
-## 🖥️ 1. Installation 
+## 🖥️ Installation (uv, Python 3.12 preferred)
 
-The easiest way to set up the MINT environment is using our automated setup script:
+Use uv with the single pyproject.toml to create and install the environment:
 
 ```bash
-# Run the setup script from the project root
-./scripts/install/setup_environment.sh
-```
+# 1) Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-This script will:
-- Create a conda environment in `./.env` folder
-- Install all dependencies including the correct torch version
-- Install the MINT package in editable mode
-- Test the installation automatically
+# 2) Create and activate a Python 3.12 environment
+uv venv --python 3.12
+source .venv/bin/activate 
 
-### Using the Environment
+# 3) Install from pyproject.toml
+uv pip install -e .
 
-**Activate the environment:**
-```bash
-conda activate ./.env
-```
-
-**Or use the activation script:**
-```bash
-source ./scripts/install/activate_mint.sh
-```
-
-**Run commands without activating:**
-```bash
-conda run --prefix=./.env <your-command>
-```
-
-**Test the installation:**
-```bash
-conda run --prefix=./.env python -c "import mint; print('Success')"
+# 4) Verify
+python -c "import mint; print('Success')"
 ```
 
 ## 2. Setting up the data
