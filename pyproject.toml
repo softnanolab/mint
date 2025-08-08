@@ -52,7 +52,7 @@ dependencies = [
     "rdkit>=2022.9.5",
     "biotite>=0.40.0",
     "fire>=0.7.0",
-    "rcsbsearchapi>=2.0.1",
+    "rcsbsearchapi<2.0",
     "openmm>=8.0.0",
     "pdbfixer @ git+https://github.com/openmm/pdbfixer@1.9",
 ]
@@ -127,6 +127,9 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+markers = [
+    "extended: marks tests as extended (deselect with '-m \"not extended\"')"
+]
 
 [tool.coverage.run]
 source = ["src/mint"]
