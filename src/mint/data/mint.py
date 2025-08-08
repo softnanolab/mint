@@ -4,12 +4,12 @@ import random
 import torch
 from Bio import SeqIO
 
-import mint
+from mint.data.esm import Alphabet
 
 
 class CollateFn:
     def __init__(self, truncation_seq_length=None):
-        self.alphabet = mint.data.Alphabet.from_architecture("ESM-1b")
+        self.alphabet = Alphabet.from_architecture("ESM-1b")
         self.truncation_seq_length = truncation_seq_length
         # self.batch_converter = alphabet.get_batch_converter(truncation_seq_length)
 

@@ -8,8 +8,8 @@ from typing import Union
 import torch
 import torch.nn as nn
 
-from ..data import Alphabet
-from ..modules import ESM1bLayerNorm, RobertaLMHead, TransformerLayer
+from mint.data.esm import Alphabet
+from mint.model.modules import ESM1bLayerNorm, RobertaLMHead, TransformerLayer
 
 
 class ESM2(nn.Module):
@@ -61,12 +61,6 @@ class ESM2(nn.Module):
             ]
         )
 
-        # self.contact_head = ContactPredictionHead(
-        #     self.num_layers * self.attention_heads,
-        #     self.prepend_bos,
-        #     self.append_eos,
-        #     eos_idx=self.eos_idx,
-        # )
         self.emb_layer_norm_after = ESM1bLayerNorm(self.embed_dim)
 
         self.lm_head = RobertaLMHead(
