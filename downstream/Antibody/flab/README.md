@@ -1,3 +1,0 @@
-## Performance on antibody modeling tasks (FLAB)
-
-All 4 datasets are downloaded from this [repo](https://github.com/Graylab/FLAb/tree/main/data). `Shanehsazzadeh2023_trastuzumab_zero_kd_ppl.csv`, `Warszawski2019_d44_Kd_ppl.csv` and `Koenig2017_g6_Kd_ppl.csv` are from the `binding` folder and `Koenig2017_g6_er_ppl.csv` is from the `expression` folder. Next, simply run `finetune_flab.py` to get the results. 

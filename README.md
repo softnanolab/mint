@@ -2,161 +2,99 @@
   Learning the language of protein-protein interactions 
 </h1>
 
-## 🌿 Overview of MINT
+## 1. 🖥️ Installation (uv, Python 3.12 preferred)
 
-MINT (Multimeric INteraction Transformer) is a Protein Language Model (PLM) designed for **contextual and scalable** modeling of interacting protein sequences. Trained on a large, curated set of **96 million protein-protein interactions (PPIs)** from the STRING database, MINT outperforms existing PLMs across diverse tasks and protein types, including:
+Use uv with the single pyproject.toml to create and install the environment:
 
-- Binding affinity prediction
-- Mutational effect estimation
-- Complex protein assembly modeling
-- Antibody-antigen interaction modeling
-- T cell receptor–epitope binding prediction
+```bash
+# 1) Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-🔬 **Why MINT?**
+# 2) Create and activate a Python 3.12 environment
+uv venv --python 3.12
+source .venv/bin/activate 
 
-✅ First PLM to be trained on large-scale PPI data
+# 3) Install from pyproject.toml
+uv pip install -e .
 
-✅ State-of-the-art performance across multiple PPI tasks
+# (Optional) Install the dev dependencies
+uv pip install -e .[dev]
 
-✅ Scalable and adaptable for diverse protein interactions
-
-## 🖥️ Installation 
-
-1. Create a new [conda](https://docs.anaconda.com/miniconda/install/) environment from the provided `enviroment.yml` file. 
-
-```
-conda env create --name mint --file=environment.yml
+# 4) Verify
+python -c "import mint; print('Success')"
 ```
 
-2. Activate the enviroment and install the package from source.
+## 2. Download Data
 
-```
-conda activate mint
-pip install -e .
+All the data is kept outside the repository. Please select a directory (ideally on SSD for faster read/write speeds) and download the data there. That location will be referenced as BASE_DATA_DIR in the following instructions.
+
+For entries in the PDB, domains have been labelled by the Orengo Group et al. and the data is available here to download: https://www.cathdb.info/download
+
+Please run pixi shell to activate the environment before running the following commands.
+
+### 1.1 Generate a list of PDB ids to download
+
+We use rcsbsearchapi to filter the PDB ids that match the following filters :
+
+- deposition Date <= 2020-05-01
+- resolution ≤ 9Å
+- sequence length > 20
+
+To generate the list of PDB ids with default parameters, run
+
+```bash
+python scripts/generate_pdb_ids.py --base_data_dir BASE_DATA_DIR
 ```
 
-3. Check if you are able to import the package.
+### 1.2 Download the PDB database (.cif files)
 
-```
-python -c "import mint; print('Success')" 
+Run the following command to download unzipped .cif files:
+
+```bash
+scripts/download_pdbs.sh -o BASE_DATA_DIR -n 16 -c
 ```
 
-4. Download the model checkpoint and note the file path where it is stored.
+The script will create a BASE_DATA_DIR/cif_zipped directory with the zipped .cif files if it doesn't exist and parallelly download the zipped .cif files.
 
+You can change the number of CPUs used for downloading by changing the -n flag. The -c flag is used to specify .cif file format (-p for .pdb format).
+
+The script will skip files already present so you can rerun the script if it was interrupted or some files were missing without re-downloading existing files.
+
+### 1.3 Process Data
+
+Run the following command to process the downloaded .cif files:
+
+```bash
+python scripts/process_data.py --base_data_dir BASE_DATA_DIR --files_per_folder 1000 --num_cpus 16
 ```
+
+This script will:
+- Unzip and organize files into folders of 1000 files each for faster read/write speeds
+- Analyze each structure and extract features
+- Create a BASE_DATA_DIR/pdb_features.json file with the dataset features
+- Create a BASE_DATA_DIR/failed_files.json file with any files that failed processing
+
+The script keeps the original zipped files so you can rerun if needed without re-downloading. You can manually remove them to free up space.
+
+### 1.4 Process CATH Domains
+
+Run the following command to process the CATH domains:
+
+```bash
+python scripts/cath_processor.py --output_path BASE_DATA_DIR/cath_domain_boundaries.json
+```
+
+This script will:
+
+- Parse the CATH domain boundaries file into a nested dictionary structure
+- Save the parsed data to a JSON file
+
+
+## 3. Download Model Checkpoint
+
+Download the model checkpoint and note the file path where it is stored:
+
+```bash
 wget https://huggingface.co/varunullanat2012/mint/resolve/main/mint.ckpt
 ```
 
-## 🚀 How to use 
-
-### Generating embeddings
-
-We suggest generating embeddings from a CSV file containing the interacting sequences like this one [here](./data/protein_sequences.csv). Next, simply execute the following code to get average embeddings over all input sequences. 
-
-```
-import torch
-from mint.helpers.extract import load_config, CSVDataset, CollateFn, MINTWrapper
-
-cfg = load_config("data/esm2_t33_650M_UR50D.json") # model config
-device = 'cuda:0' # GPU device
-checkpoint_path = '' # Where you stored the model checkpoint
-
-dataset = CSVDataset('data/protein_sequences.csv', 'Protein_Sequence_1', 'Protein_Sequence_2')
-loader = torch.utils.data.DataLoader(dataset, batch_size=2, collate_fn=CollateFn(512), shuffle=False) 
-
-wrapper = MINTWrapper(cfg, checkpoint_path, device=device)
-
-chains, chain_ids = next(iter(loader)) # Get the first batch
-chains = chains.to(device)
-chain_ids = chain_ids.to(device)
-embeddings = wrapper(chains, chain_ids)  # Generate embeddings
-print(embeddings.shape) # Should be of shape (2, 1280)
-```
-
-However, we **recommend** using the `sep_chains=True` argument in the wrapper class for maximum performance on downstream tasks. This gets the sequence-level embedding for **all sequences**, and returns it concatenated in the same order as the input. 
-
-```
-wrapper = MINTWrapper(cfg, checkpoint_path, sep_chains=True, device=device)
-
-chains, chain_ids = next(iter(loader)) # Get the first batch
-chains = chains.to(device)
-chain_ids = chain_ids.to(device)
-embeddings = wrapper(chains, chain_ids)  # Generate embeddings
-print(embeddings.shape) # Should be of shape (2, 2560)
-```
-
-### Binary PPI classification
-
-We provide code and a [model checkpoint](https://huggingface.co/varunullanat2012/mint/blob/main/bernett_mlp.pth) to predict whether two input sequences interact or not. The downstream model, which is an MLP, is trained using the gold-standard data from [Bernett et al.](./downstream/GeneralPPI/ppi). 
-
-```
-import torch
-from mint.helpers.extract import load_config, CSVDataset, CollateFn, MINTWrapper
-from mint.helpers.predict import SimpleMLP
-
-cfg = load_config("data/esm2_t33_650M_UR50D.json") # model config
-device = 'cuda:0' # GPU device
-checkpoint_path = 'mint.ckpt' # Where you stored the model checkpoint
-mlp_checkpoint_path = 'bernett_mlp.pth' # Where you stored the Bernett MLP checkpoint
-
-dataset = CSVDataset('data/protein_sequences.csv', 'Protein_Sequence_1', 'Protein_Sequence_2')
-loader = torch.utils.data.DataLoader(dataset, batch_size=2, collate_fn=CollateFn(512), shuffle=False) 
-
-wrapper = MINTWrapper(cfg, checkpoint_path, sep_chains=True, device=device)
-
-# Generate embeddings 
-chains, chain_ids = next(iter(loader)) 
-chains = chains.to(device)
-chain_ids = chain_ids.to(device)
-embeddings = wrapper(chains, chain_ids) # Should be of shape (2, 2560)
-
-# Predict using trained MLP
-model = SimpleMLP() 
-mlp_checkpoint = torch.load(mlp_checkpoint_path)
-model.load_state_dict(mlp_checkpoint)
-model.eval()
-model.to(device)
-
-predictions = torch.sigmoid(model(embeddings)) # Should be of shape (2, 1)
-print(predictions) # Probability of interaction (0 is no, 1 is yes)
-```
-
-### Finetuning 
-
-To finetune our model on a new supervised dataset, simply set the `freeze_percent` parameter to anything other than 1. Setting it to 0.5 means the last 50% of the model layers can be trained. For example, 
-
-```
-import torch
-from mint.helpers.extract import MINTWrapper
-
-cfg = load_config("data/esm2_t33_650M_UR50D.json") # model config
-device = 'cuda:0' # GPU device
-checkpoint_path = '' # path where you stored the model checkpoint
-
-wrapper = MINTWrapper(cfg, checkpoint_path, freeze_percent=0.5, device=device)
-for name, param in wrapper.model.named_parameters():
-    print(f"Parameter: {name}, Trainable: {param.requires_grad}")
-```
-
-### Examples 
-
-We provide several examples highlighting the use cases of MINT on various supervised tasks and different protein types in the `downstream` folder. 
-
-1. [Predict whether two proteins interact or not](./downstream/GeneralPPI/ppi)
-2. [Predict the binding affinity of protein complexes](./downstream/GeneralPPI/pdb-bind)
-3. [Predict whether two proteins interact or not after mutation](./downstream/GeneralPPI/mutational-ppi)
-4. [Predict the difference in binding affinity in protein complexes upon mutation](./downstream/GeneralPPI/SKEMPI_v2)
-
-
-## 📝 Citing 
-
-```
-@article{ullanat2025learning,
-  title={Learning the language of protein--protein interactions},
-  author={Ullanat, Varun and Jing, Bowen and Sledzieski, Samuel and Berger, Bonnie},
-  journal={bioRxiv},
-  pages={2025--03},
-  year={2025},
-  publisher={Cold Spring Harbor Laboratory}
-}
-```

@@ -41,3 +41,4 @@ test.ipynb
 
 *.ckpt
 *.pt
+resources/

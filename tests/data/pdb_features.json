@@ -1,0 +1,91 @@
+[
+    {
+        "filepath": "cif_unzipped/000/105M.cif",
+        "date": 882403200,
+        "structure_type": "Monomer",
+        "num_chains": 1,
+        "chain_lengths": {
+            "A": 153
+        },
+        "total_residues": 153,
+        "pdb_id": "105M"
+    },
+    {
+        "filepath": "cif_unzipped/000/103M.cif",
+        "date": 882230400,
+        "structure_type": "Monomer",
+        "num_chains": 1,
+        "chain_lengths": {
+            "A": 154
+        },
+        "total_residues": 154,
+        "pdb_id": "103M"
+    },
+    {
+        "filepath": "cif_unzipped/000/104M.cif",
+        "date": 882403200,
+        "structure_type": "Monomer",
+        "num_chains": 1,
+        "chain_lengths": {
+            "A": 153
+        },
+        "total_residues": 153,
+        "pdb_id": "104M"
+    },
+    {
+        "filepath": "cif_unzipped/000/101M.cif",
+        "date": 881971200,
+        "structure_type": "Monomer",
+        "num_chains": 1,
+        "chain_lengths": {
+            "A": 154
+        },
+        "total_residues": 154,
+        "pdb_id": "101M"
+    },
+    {
+        "filepath": "cif_unzipped/001/103L.cif",
+        "date": 717721200,
+        "structure_type": "Monomer",
+        "num_chains": 1,
+        "chain_lengths": {
+            "A": 159
+        },
+        "total_residues": 159,
+        "pdb_id": "103L"
+    },
+    {
+        "filepath": "cif_unzipped/001/102L.cif",
+        "date": 717721200,
+        "structure_type": "Monomer",
+        "num_chains": 1,
+        "chain_lengths": {
+            "A": 163
+        },
+        "total_residues": 163,
+        "pdb_id": "102L"
+    },
+    {
+        "filepath": "cif_unzipped/001/102M.cif",
+        "date": 882144000,
+        "structure_type": "Monomer",
+        "num_chains": 1,
+        "chain_lengths": {
+            "A": 154
+        },
+        "total_residues": 154,
+        "pdb_id": "102M"
+    },
+    {
+        "filepath": "cif_unzipped/001/104L.cif",
+        "date": 717721200,
+        "structure_type": "Multimer (2-mer)",
+        "num_chains": 2,
+        "chain_lengths": {
+            "A": 164,
+            "B": 164
+        },
+        "total_residues": 328,
+        "pdb_id": "104L"
+    }
+]
