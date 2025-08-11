@@ -21,6 +21,8 @@ import biotite.database.rcsb as rcsb
 import biotite.structure.io.pdbx as pdbx
 from biotite.sequence import ProteinSequence
 
+from generate_pseudomultimer_dataset import load_structure
+
 
 def get_structure_files(cif_zipped_dir: Path) -> Dict[str, List[Path]]:
     """Get all .pdb.gz and .cif.gz files from source directory.
@@ -95,38 +97,6 @@ def is_ligand_chain(chain: PDB.Chain.Chain) -> bool:
         True if chain contains no amino acids, False otherwise
     """
     return all(not is_amino_acid(residue) for residue in chain.get_residues())
-
-
-def load_structure(input_str: str, hetero: bool = False) -> structure.AtomArray | None:
-    """Load structure using biotite.
-    
-    Args:
-        input_str: PDB ID or file path
-        hetero: Whether to include hetero atoms
-        
-    Returns:
-        AtomArray or None if loading failed
-    """
-    try:
-        # PDB ID
-        if len(input_str) == 4 and input_str.isalnum():
-            cif_file_object = rcsb.fetch(input_str, "cif", target_path=None)
-            cif_file = pdbx.CIFFile.read(cif_file_object)
-            atom_array = pdbx.get_structure(cif_file, model=1)
-        else:  # local path
-            if not Path(input_str).exists():
-                print(f"Error: CIF file not found at {input_str}.")
-                return None
-            atom_array = io.load_structure(input_str)
-
-        if atom_array is None or atom_array.array_length == 0:
-            print(f"Error: No atoms loaded for structure from {input_str}.")
-            return None
-        return atom_array[atom_array.hetero == hetero]
-    except Exception as e:
-        print(f"Error loading structure {input_str}: {e}")
-        return None
-
 
 def get_sequence(struct: structure.AtomArray) -> Dict[str, str]:
     """Extract sequences from structure using biotite.

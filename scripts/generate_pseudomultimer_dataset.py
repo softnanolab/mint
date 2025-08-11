@@ -58,25 +58,41 @@ import biotite.structure.io.pdbx as pdbx
 from biotite.sequence import ProteinSequence
 
 
-def load_structure(input_str: str, hetero: bool = False) -> structure.AtomArray | None:
+def load_structure(input_path, hetero: bool = False, model: int = 1) -> structure.AtomArray | None:
+    """
+    Load a structure and return a single-model AtomArray (protein-only if hetero=False).
+    Accepts a local path or a 4-char PDB ID. Handles AtomArrayStack gracefully.
+    """
     try:
-        # PDB ID
-        if len(input_str) == 4 and input_str.isalnum():
-            cif_file_object = rcsb.fetch(input_str, "cif", target_path=None)
-            cif_file = pdbx.CIFFile.read(cif_file_object)
-            atom_array = pdbx.get_structure(cif_file, model=1)
-        else:  # local path
-            if not os.path.exists(input_str):
-                print(f"Error: CIF file not found at {input_str}.")
-                return None
-            atom_array = io.load_structure(input_str)
+        s = str(input_path)
+        p = Path(s)
 
-        if atom_array is None or atom_array.array_length == 0:
-            print(f"Error: No atoms loaded for structure from {input_str}.")
+        if p.exists():
+            atom = io.load_structure(s)  # may be AtomArray or AtomArrayStack
+        else:
+            if len(s) == 4 and s.isalnum():
+                cif_file_object = rcsb.fetch(s, "cif", target_path=None)
+                cif_file = pdbx.CIFFile.read(cif_file_object)
+                atom = pdbx.get_structure(cif_file, model=model)  # already single model
+            else:
+                print(f"Error: CIF file not found at {s}.")
+                return None
+
+        # If it's a stack (multi-model), pick one model
+        if isinstance(atom, structure.AtomArrayStack):
+            m = max(1, model) - 1
+            if m >= atom.stack_depth():
+                m = 0
+            atom = atom[m]  # -> AtomArray
+
+        if atom is None or atom.array_length == 0:
+            print(f"Error: No atoms loaded for structure from {s}.")
             return None
-        return atom_array[atom_array.hetero == hetero]
+
+        # Now safe: atom is AtomArray; hetero is 1-D of length n_atoms
+        return atom[atom.hetero == hetero]
     except Exception as e:
-        print(f"Error loading structure {input_str}: {e}")
+        print(f"Error loading structure {input_path}: {e}")
         return None
 
 
@@ -246,4 +262,3 @@ def main(
 
 if __name__ == "__main__":
     fire.Fire(main)
-
