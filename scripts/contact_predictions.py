@@ -167,12 +167,11 @@ def add_contact_predictions_to_cath(
                 skipped_chains += 1
                 continue
 
-            
             struct = load_structure(BASE_DIR / cif_path)
             if struct is None or struct.array_length == 0:
                 skipped_chains += 1
                 continue
-        
+
             output: list[dict] = []
             chain_ok = True
 
@@ -203,13 +202,15 @@ def add_contact_predictions_to_cath(
                     }
                 )
 
-            if chain_ok and output: # create contact predictions mask
-                list_of_domains = []
-                for domain in output:
-                    list_of_domains.append(domain["segments"][0]["c_alpha_coords"])
-                contact_predictions = build_contact_mask(list_of_domains)
-                output.append(contact_predictions)
-                result.setdefault(pdb_id, {})[chain_id] = output
+            if chain_ok and output:  # create contact predictions mask
+                # Gather per-domain coordinate lists (already ordered)
+                domain_coord_lists = [d["segments"][0]["c_alpha_coords"] for d in output]
+                contact_predictions = build_contact_mask(domain_coord_lists)  # (N,N) np.int8
+                # Build a structured record instead of appending a naked array
+                result.setdefault(pdb_id, {})[chain_id] = {
+                    "domains": output,  # list of domain dicts
+                    "contact_mask": contact_predictions.tolist(),  # JSON-safe
+                }
             else:
                 skipped_chains += 1
                 continue

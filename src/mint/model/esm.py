@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 from typing import Union
-
 import torch
 import torch.nn as nn
 
@@ -13,14 +12,18 @@ from mint.model.modules import ESM1bLayerNorm, RobertaLMHead, TransformerLayer
 
 
 class ESM2(nn.Module):
+
     def __init__(
         self,
         num_layers: int = 33,
         embed_dim: int = 1280,
         attention_heads: int = 20,
-        alphabet: Union[Alphabet, str] = "ESM-1b",
+        alphabet: Union["Alphabet", str] = "ESM-1b",
         token_dropout: bool = True,
         use_multimer: bool = False,
+        use_mlp_head: bool = False,
+        mlp_hidden: int = 128,
+        mlp_out_dim: int | None = None,
     ):
         super().__init__()
         self.num_layers = num_layers
@@ -38,7 +41,23 @@ class ESM2(nn.Module):
         self.append_eos = alphabet.append_eos
         self.token_dropout = token_dropout
         self.use_multimer = use_multimer
+        self.use_mlp_head = use_mlp_head
+        self.mlp_out_dim = mlp_out_dim
         self._init_submodules()
+        if self.use_mlp_head:
+            if self.mlp_out_dim is None:
+                raise ValueError("mlp_out_dim must be provided when use_mlp_head=True")
+            # Build MLP head
+            self.mlp_head = nn.Sequential(
+                nn.Linear(self.embed_dim, mlp_hidden),
+                nn.Sigmoid(),
+                nn.Linear(mlp_hidden, self.mlp_out_dim),
+                nn.Sigmoid(),
+            )
+            # Disable MLM head
+            self.lm_head = None
+        else:
+            self.mlp_head = None
 
     def _init_submodules(self):
         self.embed_scale = 1
@@ -62,12 +81,24 @@ class ESM2(nn.Module):
         )
 
         self.emb_layer_norm_after = ESM1bLayerNorm(self.embed_dim)
+        # Only create lm_head if not using MLP head
+        if not getattr(self, "use_mlp_head", False):
+            self.lm_head = RobertaLMHead(
+                embed_dim=self.embed_dim,
+                output_dim=self.alphabet_size,
+                weight=self.embed_tokens.weight,
+            )
 
-        self.lm_head = RobertaLMHead(
-            embed_dim=self.embed_dim,
-            output_dim=self.alphabet_size,
-            weight=self.embed_tokens.weight,
-        )
+    def disable_mlp_head(self):
+        self.mlp_head = None
+        self.use_mlp_head = False
+        if self.lm_head is None:
+            # Recreate MLM head if needed
+            self.lm_head = RobertaLMHead(
+                embed_dim=self.embed_dim,
+                output_dim=self.alphabet_size,
+                weight=self.embed_tokens.weight,
+            )
 
     def forward(
         self,
@@ -76,6 +107,7 @@ class ESM2(nn.Module):
         repr_layers=[],
         need_head_weights=False,
         return_contacts=False,
+        return_mlp: bool = False,
     ):
         if return_contacts:
             need_head_weights = True
@@ -133,9 +165,22 @@ class ESM2(nn.Module):
         # last hidden representation should have layer norm applied
         if (layer_idx + 1) in repr_layers:
             hidden_representations[layer_idx + 1] = x
-        x = self.lm_head(x)
 
-        result = {"logits": x, "representations": hidden_representations}
+        mlp_out = None
+        if self.use_mlp_head and self.mlp_head is not None:
+            mlp_out = self.mlp_head(x)  # (B, T, mlp_out_dim)
+
+        logits = None
+        if (not self.use_mlp_head) and self.lm_head is not None:
+            logits = self.lm_head(x)
+
+        result = {
+            "representations": hidden_representations,
+        }
+        if logits is not None:
+            result["logits"] = logits
+        if mlp_out is not None and return_mlp:
+            result["mlp_out"] = mlp_out
         if need_head_weights:
             # attentions: B x L x H x T x T
             attentions = torch.stack(attn_weights, 1)

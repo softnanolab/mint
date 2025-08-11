@@ -11,8 +11,8 @@ import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.strategies import DDPStrategy
 
-from mint.utils.dataset import CollateFn, STRINGDataset
-from mint.utils.wrapper import ESMWrapper
+from mint.model.dataset import CollateFn, STRINGDataset
+from mint.model.wrapper import ESMWrapper
 
 torch.set_float32_matmul_precision("medium")
 
