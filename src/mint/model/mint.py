@@ -27,11 +27,16 @@ class MINT(pl.LightningModule):
         # if self.iter_step % 15000 == 0:
         # if self.trainer.is_global_zero:
         # torch.save(self.model.state_dict(), f'./workdir/3B_nofreeze/checkpoint_iter_{self.iter_step}.pt')
+        self.log("train/loss", loss)
+        # TODO: not sure if I should be doing this here
+        # self.log("train/perplexity", torch.exp(loss))
         return loss
 
     def validation_step(self, batch, batch_idx):
         loss, out = self.forward(batch)
-        return loss, out
+        self.log("val/loss", loss)
+        self.log("val/perplexity", torch.exp(loss))
+        return loss
 
     def forward(self, batch):
         # 15% of tokens randomly sampled from the sequence. For those 15% of tokens, we change the input token to a special “masking”
@@ -58,9 +63,9 @@ class MINT(pl.LightningModule):
         loss = torch.nn.functional.cross_entropy(out.transpose(1, 2), tokens, reduction="none")
         loss = (loss * mask).sum() / mask.sum()
 
-        self.log("tokens", mask.sum())
-        self.log("loss", loss)
-        self.log("perplexity", torch.exp(loss))
+        # self.log("tokens", mask.sum())
+        # self.log("loss", loss)
+        # self.log("perplexity", torch.exp(loss))
         return loss, out
 
     def configure_optimizers(self):
@@ -68,7 +73,7 @@ class MINT(pl.LightningModule):
         # 0.01 for all models except the 15 billion parameter model, where we used a weight decay of 0.1. The learning rate is
         # warmed up over the first 2,000 steps to a peak value of 4e-4 (1.6e-4 for the 15B parameter model), and then linearly
         # decayed to one tenth of its peak value over the 90% of training duration
-        if self.cfg.train.freeze_self_attn:
+        if self.cfg.training_args.freeze_self_attn:
             self.model.requires_grad_(False)
             for name, p in self.model.named_parameters():
                 if "multimer_attn" in name:
@@ -76,23 +81,28 @@ class MINT(pl.LightningModule):
 
         optimizer = torch.optim.AdamW(
             filter(lambda p: p.requires_grad, self.model.parameters()),
-            lr=self.cfg.train.optim.lr,
-            betas=torch.tensor(self.cfg.train.optim.adam_betas),
-            eps=self.cfg.train.optim.adam_eps,
-            weight_decay=self.cfg.train.optim.weight_decay,
+            lr=self.cfg.training_args.lr,
+            betas=self.cfg.training_args.adam_betas,
+            eps=self.cfg.training_args.adam_eps,
+            weight_decay=self.cfg.training_args.weight_decay,
         )
 
         warmup = torch.optim.lr_scheduler.LinearLR(
-            optimizer, start_factor=1e-12, end_factor=1.0, total_iters=self.cfg.train.optim.warmup_updates
+            optimizer,
+            start_factor=1e-12,
+            end_factor=1.0,
+            total_iters=self.cfg.training_args.warmup_updates,
         )
         decay = torch.optim.lr_scheduler.LinearLR(
             optimizer,
             start_factor=1.0,
-            end_factor=self.cfg.train.optim.end_learning_rate / self.cfg.train.optim.lr,
-            total_iters=int(0.9 * int(self.cfg.train.optim.total_num_update)),
+            end_factor=self.cfg.training_args.end_learning_rate / self.cfg.training_args.lr,
+            total_iters=int(0.9 * int(self.cfg.training_args.total_num_update)),
         )
         scheduler = torch.optim.lr_scheduler.SequentialLR(
-            optimizer, schedulers=[warmup, decay], milestones=[self.cfg.train.optim.warmup_updates]
+            optimizer,
+            schedulers=[warmup, decay],
+            milestones=[self.cfg.training_args.warmup_updates],
         )
 
         return {
