@@ -1,8 +1,9 @@
 from omegaconf import DictConfig
-
 import lightning as pl
 import torch
+from torch import nn
 
+from mint.model.modules import MINTContactHead
 from mint.model.esm import ESM2
 
 
@@ -20,6 +21,9 @@ class MINT(pl.LightningModule):
             token_dropout=cfg.mint.esm2.token_dropout,
             use_multimer=cfg.mint.esm2.use_multimer,
         )
+
+        # create MLP head here
+        self.contact_head = MINTContactHead(cfg.mint.esm2.encoder_embed_dim)
 
     def training_step(self, batch, batch_idx):
         loss, _ = self.forward(batch)
