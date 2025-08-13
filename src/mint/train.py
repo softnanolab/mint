@@ -11,7 +11,7 @@ from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.strategies import DDPStrategy
 from lightning.pytorch.utilities import rank_zero_only
 
-from mint.data.mint import PseduoMMDataModule
+from mint.data.mint import PseudoMMDataModule
 from mint.model.mint import MINT
 
 MINT_PATH = Path(__file__).parent
@@ -37,7 +37,7 @@ def main(cfg: DictConfig):
 
     # load model and data module
     model = MINT(cfg)
-    data_module = PseduoMMDataModule(cfg.data)
+    data_module = PseudoMMDataModule(cfg.data)
 
     # Set up trainer
     strategy = "auto"

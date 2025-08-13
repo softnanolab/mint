@@ -2,7 +2,7 @@ from omegaconf import DictConfig
 import lightning as pl
 import torch
 from torch import nn
-
+from torch.nn import functional as F
 from mint.model.modules import MINTContactHead
 from mint.model.esm import ESM2
 
@@ -48,7 +48,7 @@ class MINT(pl.LightningModule):
         # (i.e. no change) with 10% probability. We take the loss to be the whole batch average cross entropy loss between the model’s
         # predictions and the true token for these 15% of amino acid tokens.
 
-        tokens, chain_ids = batch
+        tokens, chain_ids, contact_masks = batch
         mask = (
             (~tokens.eq(self.model.cls_idx))
             & (~tokens.eq(self.model.eos_idx))
@@ -63,14 +63,52 @@ class MINT(pl.LightningModule):
         inp = torch.where((rand < 0.8) & mask, self.model.mask_idx, inp)
         inp = torch.where((rand > 0.9) & mask, randaa, inp)
 
-        out = self.model(inp, chain_ids)["logits"]
-        loss = torch.nn.functional.cross_entropy(out.transpose(1, 2), tokens, reduction="none")
-        loss = (loss * mask).sum() / mask.sum()
+        out_mlm = self.model(inp, chain_ids)["logits"]
+
+        loss_mlm = torch.nn.functional.cross_entropy(
+            out_mlm.transpose(1, 2), tokens, reduction="none"
+        )
+        loss_mlm = (loss_mlm * mask).sum() / mask.sum()
+
+        # 1) token-level validity (exclude CLS, EOS, PAD)
+        valid_tok = (
+            (tokens != self.model.cls_idx)
+            & (tokens != self.model.eos_idx)
+            & (tokens != self.model.padding_idx)
+        )
+
+        out_mlm = out_mlm * valid_tok.unsqueeze(-1)
+
+        out_contact_head = self.model.contact_head(out_mlm)
+
+        # Pairwise valid mask (drop any pair touching an invalid token)
+        pair_valid = valid_tok[:, :, None] & valid_tok[:, None, :]  # (B, L, L)
+
+        # Contact loss (binary contact example)
+        # If your labels use -1 to denote "ignore", incorporate that too.
+        # Convert your batch masks (likely a list of np.ndarrays) into a tensor:
+        if isinstance(contact_masks, (list, tuple)):
+            targets = torch.stack(
+                [torch.as_tensor(m, device=tokens.device) for m in contact_masks], dim=0
+            )  # (B, L, L)
+        else:
+            targets = contact_masks.to(tokens.device)
+
+        # optional: exclude label==-1 cells (e.g., intra-chain) from the loss
+        label_valid = targets != -1
+        use = pair_valid & label_valid
+
+        loss_contact = F.binary_cross_entropy_with_logits(
+            out_contact_head[use],
+            contact_masks[use],
+        )
+
+        loss = loss_mlm + loss_contact
 
         # self.log("tokens", mask.sum())
         # self.log("loss", loss)
         # self.log("perplexity", torch.exp(loss))
-        return loss, out
+        return loss, out_mlm
 
     def configure_optimizers(self):
         # For model training optimization, we used Adam with 𝛽𝛽1 = 0.9, 𝛽𝛽2 = 0.98, 𝜖𝜖 = 10−8 and 𝐿𝐿2 weight decay of

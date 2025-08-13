@@ -39,21 +39,21 @@ trainer:
   limit_val_batches: 0
 
 data:
-  train:
-    links_path: "${meta.data_dir}/training.links.txt.gz"
-    seqs_path: "${meta.data_dir}/training.seqs.txt.gz"
-    concat: false
-    batch_size: 1
-    max_examples: null
-    max_len: 512
-    shuffle: true
-    num_workers: 4
-    pin_memory: true
-    overfit: false
-    # TODO: ensure you don't need these
-    # global_rank: 0
-    # world_size: 1
-    # seek: null
+  links_path: "${meta.data_dir}/training.links.txt.gz"
+  seqs_path: "${meta.data_dir}/training.seqs.txt.gz"
+  contact_masks_path: "${meta.data_dir}/training.contact_masks.pkl.gz"
+  concat: false
+  batch_size: 1
+  max_examples: null
+  max_len: 512
+  shuffle: true
+  num_workers: 4
+  pin_memory: true
+  overfit: false
+  # TODO: ensure you don't need these
+  # global_rank: 0
+  # world_size: 1
+  # seek: null
 
 wandb:
   name: null

@@ -1,4 +1,5 @@
 import gzip
+import pickle
 import random
 
 import torch
@@ -16,12 +17,12 @@ class CollateFn:
         # self.batch_converter = alphabet.get_batch_converter(truncation_seq_length)
 
     def __call__(self, batches):
-        chains = zip(*batches)
-        chains = [self.convert(c) for c in chains]
+        *chains, contact_masks = zip(*batches)  # unpack: sequences... , then masks
+        chains = [self.convert(group) for group in chains]
         chain_ids = [torch.ones(c.shape, dtype=torch.int32) * i for i, c in enumerate(chains)]
         chains = torch.cat(chains, -1)
         chain_ids = torch.cat(chain_ids, -1)
-        return chains, chain_ids
+        return chains, chain_ids, contact_masks
 
     def convert(self, seq_str_list):
         batch_size = len(seq_str_list)
@@ -137,7 +138,7 @@ class ESMDataset(torch.utils.data.IterableDataset):
             yield seq.name, seq.seq
 
 
-class DummyDataset(torch.utils.data.Dataset):
+"""class DummyDataset(torch.utils.data.Dataset):
     def __init__(self):
         super().__init__()
         self.alphabet = esm.data.Alphabet.from_architecture("ESM-1b")
@@ -148,7 +149,7 @@ class DummyDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         return torch.randint(4, 24, size=(1024,))
         seq = "MVHLTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH"
-        return self.alphabet.get_batch_converter()([("P68871", seq)])[2].squeeze(0)
+        return self.alphabet.get_batch_converter()([("P68871", seq)])[2].squeeze(0)"""
 
 
 class PseduoMMDataset(torch.utils.data.Dataset):
@@ -215,6 +216,147 @@ class PseduoMMDataset(torch.utils.data.Dataset):
             # For overfitting, always return the same item
             return self.data[0]
         return self.data[idx]
+
+
+class PseudoMMDataset(torch.utils.data.Dataset):
+    """Pseudo Multimer Dataset Class with Structural Info."""
+
+    def __init__(
+        self,
+        links_path: str,
+        seqs_path: str,
+        contact_masks_path: str,
+        concat: bool = False,
+        max_examples: int = None,
+        max_len: int = None,
+        overfit: bool = False,
+    ):
+        super().__init__()
+        self.links_path = links_path
+        self.seqs_path = seqs_path
+        self.contact_masks_path = contact_masks_path
+        self.concat = concat
+        self.max_len = max_len
+        self.overfit = overfit
+
+        # Load all data upfront for simplicity
+        self.data = self._load_data()
+
+        if max_examples:
+            self.data = self.data[:max_examples]
+
+    def _load_data(self):
+        """Load all data into memory."""
+        data = []
+        seqs = {}
+
+        # Load sequences first
+        with gzip.open(self.seqs_path, "rt") as seqs_f:
+            for line in seqs_f:
+                name, seq = line.strip().split()
+                seqs[name] = seq
+
+        # Load contact masks second
+        with gzip.open(self.contact_masks_path, "rb") as f:
+            contact_masks = pickle.load(f)
+
+        with gzip.open(self.links_path, "rt") as links_f:
+            for line in links_f:
+                names = line.strip().split()
+                if not names:
+                    continue
+
+                # Validate presence and optional length constraint
+                passed = []
+                for n in names:
+                    if n not in seqs:
+                        passed = []
+                        break
+                    if self.max_len is not None and len(seqs[n]) > self.max_len:
+                        passed = []
+                        break
+                    passed.append(n)
+
+                # If any failed, skip the whole line
+                if len(passed) != len(names):
+                    continue
+
+                # All domains must belong to the same chain (chain-level key)
+                keys = [n.rsplit("_", 1)[0] for n in passed]
+                if len(set(keys)) != 1:
+                    continue
+                chain_key = keys[0]
+
+                mask = contact_masks.get(chain_key)
+                if mask is None:
+                    continue
+
+                holder = tuple(seqs[n] for n in passed) + (mask,)
+                data.append(holder)
+
+        return data
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        # TODO: think about self.overfit argument here
+        if self.overfit:
+            # For overfitting, always return the same item
+            return self.data[0]
+        return self.data[idx]
+
+
+class PseudoMMDataModule(pl.LightningDataModule):
+    """PyTorch Lightning DataModule for STRING protein interaction data."""
+
+    def __init__(
+        self,
+        config: DictConfig,
+    ):
+        super().__init__()
+        self.config = config
+
+        self.train_dataset = PseudoMMDataset(
+            links_path=self.config.train.links_path,
+            seqs_path=self.config.train.seqs_path,
+            contact_masks_path=self.config.contact_masks_path,
+            concat=self.config.train.concat,
+            max_examples=self.config.train.max_examples,
+            max_len=self.config.train.max_len,
+            overfit=self.config.train.overfit,
+        )
+
+        # TODO: add val dataset
+
+    def setup(self, stage: str = None):
+        """Set up datasets for training and validation."""
+        pass
+
+    def train_dataloader(self):
+        """Create training data loader."""
+        assert self.train_dataset is not None
+
+        return torch.utils.data.DataLoader(
+            self.train_dataset,
+            batch_size=self.config.train.batch_size,
+            shuffle=self.config.train.shuffle,
+            num_workers=self.config.train.num_workers,
+            collate_fn=CollateFn(self.config.train.max_len),
+            pin_memory=self.config.train.pin_memory,
+        )
+
+    def val_dataloader(self):
+        """Create validation data loader."""
+        # TODO: add val dataset
+        return torch.utils.data.DataLoader(
+            self.train_dataset,
+            batch_size=self.config.train.batch_size,
+            shuffle=self.config.train.shuffle,
+            num_workers=self.config.train.num_workers,
+            collate_fn=CollateFn(self.config.train.max_len),
+            pin_memory=self.config.train.pin_memory,
+        )
 
 
 class PseduoMMDataModule(pl.LightningDataModule):

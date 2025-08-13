@@ -1,4 +1,5 @@
 from __future__ import annotations
+from itertools import islice
 
 """Generate pseudo-multimer dataset files for MINT retraining from CATH domain boundaries.
 
@@ -32,10 +33,13 @@ import os
 from glob import glob
 from pathlib import Path
 from typing import Dict, List
+from numpy.typing import NDArray
+import numpy as np
 
 import numpy as np
 from tqdm import tqdm
 import gzip
+import pickle
 import fire
 
 # -----------------------------------------------------------------------------
@@ -46,6 +50,10 @@ THIS_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = THIS_DIR.parent
 
 CATH_JSON = PROJECT_ROOT / "resources/cath_domain_boundaries.json"
+
+DATA_DIR = PROJECT_ROOT.parent / "DATA"
+
+PDB_FEATURES = DATA_DIR / "pdb_features.json"
 
 # -----------------------------------------------------------------------------
 # Utility wrappers (copied from user-provided snippet)
@@ -111,37 +119,90 @@ def slice_sequence_by_residue_range(
     )
 
 
+def get_ca_atoms(struct: structure.AtomArray, chain_id: str, start_res: int, end_res: int) -> List:
+    """
+    Returns the 3D coordinates of just the Cα atoms from a given chain
+    and residue range (inclusive).
+    """
+    if struct is None or struct.array_length == 0:
+        raise ValueError("Empty AtomArray provided.")
+
+    mask = (
+        (struct.atom_name == "CA")
+        & (struct.chain_id == chain_id)
+        & (struct.res_id >= start_res)
+        & (struct.res_id <= end_res)
+        & (struct.ins_code == "")
+    )
+    struct = struct[mask]
+    return struct.coord.tolist() if struct.array_length() > 0 else []
+
+
+def get_contact_mask(domain_coords: List[List[List]], cutoff=5.0):
+    sequence_length = 0
+    domain_intervals = []
+    for chain in domain_coords:
+        sequence_length += len(chain)
+        if not domain_intervals:
+            domain_intervals.append([1, len(chain)])
+        else:
+            domain_intervals.append(
+                [domain_intervals[-1][-1] + 1, domain_intervals[-1][-1] + len(chain)]
+            )
+
+    contact_mask = np.zeros((sequence_length, sequence_length), dtype=int)
+    for start, end in domain_intervals:
+        contact_mask[start : end + 1, start : end + 1] = -1  # ignore intrachain residue contacts
+
+    # domain_coords: List[List[List[float]]]
+    coords = np.stack(
+        [np.asarray(pt, dtype=float) for chain in domain_coords for pt in chain], axis=0
+    )  # shape: (N, 3)
+
+    N = contact_mask.shape[0]
+    for i in range(N):
+        for j in range(N):
+            if contact_mask[i, j] == -1:
+                continue
+            contact_mask[i, j] = 0 if np.linalg.norm(coords[i] - coords[j]) > 5.0 else 1
+
+    return contact_mask
+
+
 # -----------------------------------------------------------------------------
 # Main routine
 # -----------------------------------------------------------------------------
 
 
-def locate_cif_file(pdb_id: str, dataset_root: Path, pdb_features: List[Dict]) -> str | None:
+def locate_cif_file(pdb_id: str, pdb_features: List[Dict], base_dir=PROJECT_ROOT) -> str | None:
     """Return path to local mmCIF file for *pdb_id* using pdb_features.json."""
     for entry in pdb_features:
         if entry.get("pdb_id", "").upper() == pdb_id.upper():
-            return entry.get("filepath")
+            output_path = Path(str(base_dir) + "/" + entry.get("filepath")).resolve()
+            return str(output_path)
     return None
 
 
-def build_dataset(dataset_root: Path, pdb_features: List[Dict]):
+def build_dataset(pdb_features: List[Dict], cath_data_path=CATH_JSON):
     """Generate sequence and link data structures.
 
     Returns:
         sequences (Dict[str, str]): domainID -> sequence
         links (List[Tuple[str, str]]): list of domainID pairs (space-separated later)
+        contact_mask (Dict[str, NDArray]): chain_id -> contact mask for residues in the chain
     """
-    with open(CATH_JSON) as f:
+    with open(cath_data_path) as f:
         cath_data = json.load(f)
 
     sequences: Dict[str, str] = {}
     links: List[List[str]] = []
+    contact_masks: Dict[str : NDArray[np.int_]] = {}
     skipped_items: List[Dict[str, str]] = []
 
     total_entries = sum(len(chains) for chains in cath_data.values())
 
     with tqdm(total=total_entries, desc="Processing CATH entries") as pbar:
-        for pdb_id, chains in cath_data.items():
+        for pdb_id, chains in islice(cath_data.items(), 100):
             for chain_id, domains in chains.items():
                 pbar.update(1)
 
@@ -151,7 +212,7 @@ def build_dataset(dataset_root: Path, pdb_features: List[Dict]):
                 if not all(len(domain["segments"]) == 1 for domain in domains):
                     continue
 
-                cif_path = locate_cif_file(pdb_id, dataset_root, pdb_features)
+                cif_path = locate_cif_file(pdb_id, pdb_features)
                 if cif_path is None:
                     skipped_items.append({
                         "pdb_id": pdb_id,
@@ -169,10 +230,16 @@ def build_dataset(dataset_root: Path, pdb_features: List[Dict]):
                     })
                     continue
 
+                # build the contact mask here by doing contact_mask(domains)
+                # contact_mask = create_contact_mask(struct)
+
                 domain_ids: List[str] = []
+                domain_coords: List[List] = []
                 for idx, domain in enumerate(domains, start=1):
+
                     seg = domain["segments"][0]
                     seq = slice_sequence_by_residue_range(struct, chain_id, seg["start"], seg["end"])
+
                     if not seq:
                         skipped_items.append({
                             "pdb_id": pdb_id,
@@ -182,47 +249,56 @@ def build_dataset(dataset_root: Path, pdb_features: List[Dict]):
                         })
                         domain_ids = []
                         break
+
+                    domain_coords.append(get_ca_atoms(struct, chain_id, seg["start"], seg["end"]))
+
                     dom_id = f"{pdb_id}_{chain_id}_{idx}"
                     sequences[dom_id] = seq
                     domain_ids.append(dom_id)
+
+                # find the contact mask for this chain (pseudochains are domains)
+                contact_mask = get_contact_mask(domain_coords, cutoff=5.0)
+                chain_id = f"{pdb_id}_{chain_id}"
+                contact_masks[chain_id] = contact_mask
 
                 # add whole domain group line if >=2 domains
                 if len(domain_ids) >= 2:
                     links.append(domain_ids)
 
-    return sequences, links, skipped_items
+    return sequences, links, contact_masks, skipped_items
 
 
 def main(
-    dataset_path: str,
     links_output_path: str,
     seqs_output_path: str,
+    contact_masks_ouput_path: str,
+    pdb_features_path=PDB_FEATURES,
+    cath_data_path=CATH_JSON,
 ):
-    """Generate gzipped links and sequences files for MINT retraining.
+    """Generate gzipped links and sequences files for MINT retraining, along with
+    a pickle file containing the contact masks for each chain""
 
     Args:
         dataset_path: Directory containing mmCIF files.
         links_output_path: Path to write the `training.links.txt.gz` file.
         seqs_output_path: Path to write the `training.seqs.txt.gz` file.
+        contact_masks_output_path: Path to write the 'training.contact_masks.
     """
-    dataset_root = Path(dataset_path)
-    if not dataset_root.exists():
-        raise FileNotFoundError(f"Dataset path not found: {dataset_root}")
-
     # Load pdb_features.json
-    pdb_features_path = dataset_root.parent / "pdb_features.json"
     if not pdb_features_path.exists():
         raise FileNotFoundError(f"pdb_features.json not found at {pdb_features_path}")
-    
+
     with open(pdb_features_path) as f:
         pdb_features = json.load(f)
 
-    print(f"Dataset root : {dataset_root}")
     print(f"Links output : {links_output_path}")
     print(f"Seqs  output : {seqs_output_path}")
+    print(f"Contact masks output: {contact_masks_ouput_path}")
     print(f"Loaded {len(pdb_features)} PDB entries from pdb_features.json")
 
-    sequences, links, skipped_items = build_dataset(dataset_root, pdb_features)
+    sequences, links, contact_masks, skipped_items = build_dataset(
+        pdb_features, cath_data_path=cath_data_path
+    )
 
     # Write sequences file
     with gzip.open(seqs_output_path, "wt") as f_seq:
@@ -234,9 +310,15 @@ def main(
         for ids in links:
             f_link.write(" ".join(ids) + "\n")
 
-    print(f"Wrote {len(sequences)} sequences and {len(links)} links.")
+    # Write the contact_masks file
+    with gzip.open(contact_masks_ouput_path, "wb") as f_contact_mask:
+        pickle.dump(contact_masks, f_contact_mask, protocol=pickle.HIGHEST_PROTOCOL)
+
+    print(
+        f"Wrote {len(sequences)} sequences, {len(links)} links, and {len(contact_masks)} contact masks."
+    )
     print(f"Skipped {len(skipped_items)} items.")
-    
+
     # Save skipped items to JSON file
     skipped_output_path = Path(links_output_path).parent / "skipped_items.json"
     with open(skipped_output_path, "w") as f:
@@ -246,4 +328,3 @@ def main(
 
 if __name__ == "__main__":
     fire.Fire(main)
-
