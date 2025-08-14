@@ -5,8 +5,11 @@ from scripts.cath_processor import process_cath_domains
 # Get the path to the test data directory
 TEST_DATA_DIR = Path(__file__).parent / "data"
 
-def test_process_cath_domains(test_input_path=TEST_DATA_DIR / "test_cath_domain_boundaries.txt",
-                              test_output_path=TEST_DATA_DIR / "test_processed_domain_boundaries.json"):
+
+def test_process_cath_domains(
+    test_input_path=TEST_DATA_DIR / "raw" / "test_cath_domain_boundaries.txt",
+    test_output_path=TEST_DATA_DIR / "processed" / "test_processed_domain_boundaries.json",
+):
     # Check that process_cath_domains parses the cath database correctly
     process_cath_domains(input_path=test_input_path, output_path=test_output_path)
     output_file = test_output_path
@@ -91,9 +94,10 @@ def test_process_cath_domains(test_input_path=TEST_DATA_DIR / "test_cath_domain_
                         f"End for {pdb_id}.{chain_id} domain {act_dom['domain_idx']} segment {act_seg['segment_idx']} mismatch: " \
                         f"{act_seg['end']} vs {exp_seg['end']}"
 
+
 def teardown_function(function):
     """Remove the output file after tests run."""
-    output_path = TEST_DATA_DIR / "test_processed_domain_boundaries.json"
+    output_path = TEST_DATA_DIR / "processed" / "test_processed_domain_boundaries.json"
     try:
         output_path.unlink()
     except FileNotFoundError:

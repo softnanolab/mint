@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import gzip
 import json
 import math
@@ -13,6 +14,7 @@ from Bio import PDB
 from tqdm import tqdm
 import fire
 import numpy as np
+from dotenv import load_dotenv, find_dotenv
 
 # Biotite imports for structure handling
 import biotite.structure as structure
@@ -20,6 +22,10 @@ import biotite.structure.io as io
 import biotite.database.rcsb as rcsb
 import biotite.structure.io.pdbx as pdbx
 from biotite.sequence import ProteinSequence
+
+# Load environment variables from .env file
+load_dotenv(find_dotenv())
+DATA_DIR = os.getenv("DATA_DIR")
 
 
 def get_structure_files(cif_zipped_dir: Path) -> Dict[str, List[Path]]:
@@ -57,8 +63,8 @@ def create_folder_structure(
     Returns:
         Dictionary mapping folder numbers to folder paths
     """
-    unzipped_dir = base_data_dir / "cif_unzipped"
-    unzipped_dir.mkdir(exist_ok=True)
+    unzipped_dir = base_data_dir / "raw" / "cif_unzipped"
+    unzipped_dir.mkdir(parents=True, exist_ok=True)
 
     num_folders = math.ceil(total_files / files_per_folder)
     folders = {}
@@ -225,7 +231,7 @@ def process_file(args: Tuple[Path, Path, int]) -> Tuple[bool, Optional[Dict]]:
         return False, None
 
 
-def main(base_data_dir: str, files_per_folder: int = 1000, num_cpus: int = 8) -> None:
+def main(base_data_dir: str = DATA_DIR, files_per_folder: int = 1000, num_cpus: int = 8) -> None:
     """Process structure files: unzip, organize into folders, and analyze.
 
     Args:
@@ -238,7 +244,7 @@ def main(base_data_dir: str, files_per_folder: int = 1000, num_cpus: int = 8) ->
         raise FileNotFoundError(f"Directory not found: {base_data_dir}")
 
     # Get all structure files
-    structure_files = get_structure_files(base_data_dir / "cif_zipped")
+    structure_files = get_structure_files(base_data_dir / "raw" / "cif_zipped")
     all_files = structure_files["pdb"] + structure_files["cif"]
     total_files = len(all_files)
 

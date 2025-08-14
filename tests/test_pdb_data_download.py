@@ -1,6 +1,7 @@
 import os
 import pytest
 import shutil
+
 from scripts.generate_pdb_ids import main as generate_pdb_ids_main
 from scripts.process_data import main as process_data_main
 
@@ -27,7 +28,7 @@ class TestDataPipeline:
             length=1000,
         )
 
-        pdb_ids_path = os.path.join(tmp_data_dir, "pdb_ids.txt")
+        pdb_ids_path = os.path.join(tmp_data_dir, "raw", "pdb_ids.txt")
         with open(pdb_ids_path, "r") as f:
             pdb_ids = f.read().split(",")
         assert len(pdb_ids) == 3785
@@ -39,12 +40,13 @@ class TestDataPipeline:
             self.tests_dir, "..", "scripts", "download_pdbs.sh"
         )
         # Copy example PDB IDs file to tmp data dir
-        example_pdb_ids = os.path.join(self.tests_dir, "data/pdb_ids.txt")
-        copied_pdb_ids = os.path.join(tmp_data_dir, "pdb_ids.txt")
+        example_pdb_ids = os.path.join(self.tests_dir, "data", "raw", "pdb_ids.txt")
+        copied_pdb_ids = os.path.join(tmp_data_dir, "raw", "pdb_ids.txt")
+        os.makedirs(os.path.dirname(copied_pdb_ids), exist_ok=True)
         shutil.copy(example_pdb_ids, copied_pdb_ids)
 
         # Remove existing cif_zipped directory if it exists
-        cif_zipped_dir = os.path.join(tmp_data_dir, "cif_zipped")
+        cif_zipped_dir = os.path.join(tmp_data_dir, "raw", "cif_zipped")
         if os.path.exists(cif_zipped_dir):
             shutil.rmtree(cif_zipped_dir)
 
@@ -64,12 +66,12 @@ class TestDataPipeline:
     def test_process_data(self, tmp_data_dir) -> None:
         """Test the process_data script."""
         # Remove existing unzipped files folder if exists
-        unzipped_dir = os.path.join(tmp_data_dir, "cif_unzipped")
+        unzipped_dir = os.path.join(tmp_data_dir, "raw", "cif_unzipped")
         if os.path.exists(unzipped_dir):
             shutil.rmtree(unzipped_dir)
 
-        src_cif_dir = os.path.join(self.tests_dir, "data", "cif_zipped")
-        dst_cif_dir = os.path.join(tmp_data_dir, "cif_zipped")
+        src_cif_dir = os.path.join(self.tests_dir, "data", "raw", "cif_zipped")
+        dst_cif_dir = os.path.join(tmp_data_dir, "raw", "cif_zipped")
 
         # Remove existing zipped files folder if exists
         if os.path.exists(dst_cif_dir):
