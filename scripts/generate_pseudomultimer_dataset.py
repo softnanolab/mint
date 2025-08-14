@@ -85,9 +85,7 @@ def get_sequence(struct: structure.AtomArray) -> Dict[str, str]:
     for chain_id in np.unique(struct.chain_id):
         chain_mask = (struct.chain_id == chain_id) & (struct.atom_name == "CA")
         chain_struct = struct[chain_mask]
-        seq = "".join(
-            ProteinSequence.convert_letter_3to1(res.res_name) for res in chain_struct
-        )
+        seq = "".join(ProteinSequence.convert_letter_3to1(res.res_name) for res in chain_struct)
         sequences[str(chain_id)] = seq
     return sequences
 
@@ -106,9 +104,7 @@ def slice_sequence_by_residue_range(
     if not np.any(mask):
         return ""
     chain_struct = struct[mask]
-    return "".join(
-        ProteinSequence.convert_letter_3to1(res.res_name) for res in chain_struct
-    )
+    return "".join(ProteinSequence.convert_letter_3to1(res.res_name) for res in chain_struct)
 
 
 # -----------------------------------------------------------------------------
@@ -153,33 +149,33 @@ def build_dataset(dataset_root: Path, pdb_features: List[Dict]):
 
                 cif_path = locate_cif_file(pdb_id, dataset_root, pdb_features)
                 if cif_path is None:
-                    skipped_items.append({
-                        "pdb_id": pdb_id,
-                        "chain_id": chain_id,
-                        "reason": "cif_not_found"
-                    })
+                    skipped_items.append(
+                        {"pdb_id": pdb_id, "chain_id": chain_id, "reason": "cif_not_found"}
+                    )
                     continue
 
                 struct = load_structure(cif_path)
                 if struct is None:
-                    skipped_items.append({
-                        "pdb_id": pdb_id,
-                        "chain_id": chain_id,
-                        "reason": "structure_load_failed"
-                    })
+                    skipped_items.append(
+                        {"pdb_id": pdb_id, "chain_id": chain_id, "reason": "structure_load_failed"}
+                    )
                     continue
 
                 domain_ids: List[str] = []
                 for idx, domain in enumerate(domains, start=1):
                     seg = domain["segments"][0]
-                    seq = slice_sequence_by_residue_range(struct, chain_id, seg["start"], seg["end"])
+                    seq = slice_sequence_by_residue_range(
+                        struct, chain_id, seg["start"], seg["end"]
+                    )
                     if not seq:
-                        skipped_items.append({
-                            "pdb_id": pdb_id,
-                            "chain_id": chain_id,
-                            "reason": "empty_sequence",
-                            "domain_idx": idx
-                        })
+                        skipped_items.append(
+                            {
+                                "pdb_id": pdb_id,
+                                "chain_id": chain_id,
+                                "reason": "empty_sequence",
+                                "domain_idx": idx,
+                            }
+                        )
                         domain_ids = []
                         break
                     dom_id = f"{pdb_id}_{chain_id}_{idx}"
@@ -213,7 +209,7 @@ def main(
     pdb_features_path = dataset_root.parent / "pdb_features.json"
     if not pdb_features_path.exists():
         raise FileNotFoundError(f"pdb_features.json not found at {pdb_features_path}")
-    
+
     with open(pdb_features_path) as f:
         pdb_features = json.load(f)
 
@@ -236,7 +232,7 @@ def main(
 
     print(f"Wrote {len(sequences)} sequences and {len(links)} links.")
     print(f"Skipped {len(skipped_items)} items.")
-    
+
     # Save skipped items to JSON file
     skipped_output_path = Path(links_output_path).parent / "skipped_items.json"
     with open(skipped_output_path, "w") as f:
@@ -246,4 +242,3 @@ def main(
 
 if __name__ == "__main__":
     fire.Fire(main)
-

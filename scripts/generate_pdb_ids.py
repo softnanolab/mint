@@ -55,14 +55,10 @@ def main(
         length (int): Minimum protein sequence length.
             defaults to 20
     """
-    assert os.path.exists(
-        base_data_dir
-    ), f"Base data directory {base_data_dir} does not exist"
+    assert os.path.exists(base_data_dir), f"Base data directory {base_data_dir} does not exist"
 
     # Get filtered PDB IDs
-    pdb_ids = get_filtered_pdb_ids(
-        max_resolution=resolution, max_date=date, min_length=length
-    )
+    pdb_ids = get_filtered_pdb_ids(max_resolution=resolution, max_date=date, min_length=length)
 
     # Save results
     output_file_path = os.path.join(base_data_dir, "raw", "pdb_ids.txt")

@@ -5,6 +5,7 @@ from mint.model.mint import MINT
 
 BASE_PATH = Path(__file__).parent.parent
 
+
 def test_mint():
     cfg = OmegaConf.load(BASE_PATH / "src/mint/configs/main.yaml")
     # override for faster testing

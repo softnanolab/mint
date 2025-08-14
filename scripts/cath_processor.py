@@ -6,7 +6,9 @@ import fire
 BASE_DIR = Path(__file__).parent.parent
 
 
-def process_cath_domains(input_path = BASE_DIR / "resources/cath_domain_boundaries.txt", output_path: str = None) -> None:
+def process_cath_domains(
+    input_path=BASE_DIR / "resources/cath_domain_boundaries.txt", output_path: str = None
+) -> None:
     """Parses the CathDomall file into a nested dictionary structure which looks like:
 
     {
@@ -29,7 +31,7 @@ def process_cath_domains(input_path = BASE_DIR / "resources/cath_domain_boundari
                              }
                             ]
                 }
-    
+
     }
 
     Args:
@@ -67,7 +69,7 @@ def process_cath_domains(input_path = BASE_DIR / "resources/cath_domain_boundari
                 if idx >= len(tokens):
                     break  # safety
                 num_segments = int(tokens[idx])
-                idx += 1 # enter into the segment block
+                idx += 1  # enter into the segment block
 
                 segments = []
                 for segment_idx in range(1, num_segments + 1):
@@ -77,11 +79,15 @@ def process_cath_domains(input_path = BASE_DIR / "resources/cath_domain_boundari
                     segments.append(
                         {
                             "segment_idx": segment_idx,
-                            "start": int(tokens[idx + 1]), # access the start residue index in the segment block
-                            "end": int(tokens[idx + 4]), # access the end residude index in the segment block
+                            "start": int(
+                                tokens[idx + 1]
+                            ),  # access the start residue index in the segment block
+                            "end": int(
+                                tokens[idx + 4]
+                            ),  # access the end residude index in the segment block
                         }
                     )
-                    idx += 6 # access the next segment block
+                    idx += 6  # access the next segment block
 
                 result.setdefault(pdb_id, {}).setdefault(chain_id, []).append(
                     {

@@ -43,7 +43,9 @@ class ESM2(nn.Module):
     def _init_submodules(self):
         self.embed_scale = 1
         self.embed_tokens = nn.Embedding(
-            self.alphabet_size, self.embed_dim, padding_idx=self.padding_idx,
+            self.alphabet_size,
+            self.embed_dim,
+            padding_idx=self.padding_idx,
         )
 
         self.layers = nn.ModuleList(

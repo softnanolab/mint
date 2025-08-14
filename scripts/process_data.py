@@ -105,11 +105,11 @@ def is_ligand_chain(chain: PDB.Chain.Chain) -> bool:
 
 def load_structure(input_str: str, hetero: bool = False) -> structure.AtomArray | None:
     """Load structure using biotite.
-    
+
     Args:
         input_str: PDB ID or file path
         hetero: Whether to include hetero atoms
-        
+
     Returns:
         AtomArray or None if loading failed
     """
@@ -136,10 +136,10 @@ def load_structure(input_str: str, hetero: bool = False) -> structure.AtomArray 
 
 def get_sequence(struct: structure.AtomArray) -> Dict[str, str]:
     """Extract sequences from structure using biotite.
-    
+
     Args:
         struct: AtomArray structure
-        
+
     Returns:
         Dictionary mapping chain IDs to sequences
     """
@@ -147,16 +147,12 @@ def get_sequence(struct: structure.AtomArray) -> Dict[str, str]:
     for chain_id in np.unique(struct.chain_id):
         chain_mask = (struct.chain_id == chain_id) & (struct.atom_name == "CA")
         chain_struct = struct[chain_mask]
-        seq = "".join(
-            ProteinSequence.convert_letter_3to1(res.res_name) for res in chain_struct
-        )
+        seq = "".join(ProteinSequence.convert_letter_3to1(res.res_name) for res in chain_struct)
         sequences[str(chain_id)] = seq
     return sequences
 
 
-def analyze_structure(
-    fpath: str, pdb_id: str
-) -> Dict[str, Union[str, int, Dict[str, int]]]:
+def analyze_structure(fpath: str, pdb_id: str) -> Dict[str, Union[str, int, Dict[str, int]]]:
     """Analyze a structure to extract key information using biotite.
 
     Args:
@@ -191,9 +187,7 @@ def analyze_structure(
         "filepath": str(fpath),
         "pdb_id": pdb_id,
         "date": date,
-        "structure_type": (
-            "Monomer" if num_chains == 1 else f"Multimer ({num_chains}-mer)"
-        ),
+        "structure_type": ("Monomer" if num_chains == 1 else f"Multimer ({num_chains}-mer)"),
         "num_chains": num_chains,
         "chain_lengths": chain_lengths,
         "total_residues": total_residues,
@@ -279,9 +273,7 @@ def main(base_data_dir: str = DATA_DIR, files_per_folder: int = 1000, num_cpus: 
                 if result["num_chains"] > 0 and result["total_residues"] > 0:
                     results.append(result)
                 else:
-                    print(
-                        f"Warning: Skipping {result['pdb_id']} due to 0 chains or residues"
-                    )
+                    print(f"Warning: Skipping {result['pdb_id']} due to 0 chains or residues")
             else:
                 failed_files.append(str(tasks[len(results) + len(failed_files)][0]))
 

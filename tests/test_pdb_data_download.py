@@ -36,9 +36,7 @@ class TestDataPipeline:
 
     def test_download_pdbs(self, tmp_data_dir) -> None:
         """Test the download_pdbs script."""
-        download_script = os.path.join(
-            self.tests_dir, "..", "scripts", "download_pdbs.sh"
-        )
+        download_script = os.path.join(self.tests_dir, "..", "scripts", "download_pdbs.sh")
         # Copy example PDB IDs file to tmp data dir
         example_pdb_ids = os.path.join(self.tests_dir, "data", "raw", "pdb_ids.txt")
         copied_pdb_ids = os.path.join(tmp_data_dir, "raw", "pdb_ids.txt")
