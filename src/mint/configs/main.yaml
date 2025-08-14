@@ -1,7 +1,7 @@
 meta:
-  code_base_dir: "/home/path/to/mint"
-  data_dir: "/home/path/to/data"
-  experiment_name: "set-experiment-name"
+  code_base_dir: ${oc.env:CODE_BASE_DIR}
+  data_dir: ${oc.env:DATA_DIR}
+  experiment_name: mint_test_run
   experiment_dir: "${meta.code_base_dir}/outputs/${meta.experiment_name}"
   matmul_precision: "medium"
   pretrained: null
@@ -58,7 +58,7 @@ data:
 wandb:
   name: null
   project: "${meta.experiment_name}"
-  entity: "set-entity"
+  entity: ${oc.env:WANDB_ENTITY}
 
 # hydra run directory
 hydra:

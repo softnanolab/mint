@@ -54,6 +54,7 @@ dependencies = [
     "fire>=0.7.0",
     "rcsbsearchapi<2.0",
     "wandb>=0.21.1",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.optional-dependencies]
