@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import gzip
 import json
 import math
@@ -13,6 +14,7 @@ from Bio import PDB
 from tqdm import tqdm
 import fire
 import numpy as np
+from dotenv import load_dotenv, find_dotenv
 
 # Biotite imports for structure handling
 import biotite.structure as structure
@@ -20,6 +22,10 @@ import biotite.structure.io as io
 import biotite.database.rcsb as rcsb
 import biotite.structure.io.pdbx as pdbx
 from biotite.sequence import ProteinSequence
+
+# Load environment variables from .env file
+load_dotenv(find_dotenv())
+DATA_DIR = os.getenv("DATA_DIR")
 
 
 def get_structure_files(cif_zipped_dir: Path) -> Dict[str, List[Path]]:
@@ -57,8 +63,8 @@ def create_folder_structure(
     Returns:
         Dictionary mapping folder numbers to folder paths
     """
-    unzipped_dir = base_data_dir / "cif_unzipped"
-    unzipped_dir.mkdir(exist_ok=True)
+    unzipped_dir = base_data_dir / "raw" / "cif_unzipped"
+    unzipped_dir.mkdir(parents=True, exist_ok=True)
 
     num_folders = math.ceil(total_files / files_per_folder)
     folders = {}
@@ -99,11 +105,11 @@ def is_ligand_chain(chain: PDB.Chain.Chain) -> bool:
 
 def load_structure(input_str: str, hetero: bool = False) -> structure.AtomArray | None:
     """Load structure using biotite.
-    
+
     Args:
         input_str: PDB ID or file path
         hetero: Whether to include hetero atoms
-        
+
     Returns:
         AtomArray or None if loading failed
     """
@@ -130,10 +136,10 @@ def load_structure(input_str: str, hetero: bool = False) -> structure.AtomArray 
 
 def get_sequence(struct: structure.AtomArray) -> Dict[str, str]:
     """Extract sequences from structure using biotite.
-    
+
     Args:
         struct: AtomArray structure
-        
+
     Returns:
         Dictionary mapping chain IDs to sequences
     """
@@ -141,16 +147,12 @@ def get_sequence(struct: structure.AtomArray) -> Dict[str, str]:
     for chain_id in np.unique(struct.chain_id):
         chain_mask = (struct.chain_id == chain_id) & (struct.atom_name == "CA")
         chain_struct = struct[chain_mask]
-        seq = "".join(
-            ProteinSequence.convert_letter_3to1(res.res_name) for res in chain_struct
-        )
+        seq = "".join(ProteinSequence.convert_letter_3to1(res.res_name) for res in chain_struct)
         sequences[str(chain_id)] = seq
     return sequences
 
 
-def analyze_structure(
-    fpath: str, pdb_id: str
-) -> Dict[str, Union[str, int, Dict[str, int]]]:
+def analyze_structure(fpath: str, pdb_id: str) -> Dict[str, Union[str, int, Dict[str, int]]]:
     """Analyze a structure to extract key information using biotite.
 
     Args:
@@ -185,9 +187,7 @@ def analyze_structure(
         "filepath": str(fpath),
         "pdb_id": pdb_id,
         "date": date,
-        "structure_type": (
-            "Monomer" if num_chains == 1 else f"Multimer ({num_chains}-mer)"
-        ),
+        "structure_type": ("Monomer" if num_chains == 1 else f"Multimer ({num_chains}-mer)"),
         "num_chains": num_chains,
         "chain_lengths": chain_lengths,
         "total_residues": total_residues,
@@ -225,7 +225,7 @@ def process_file(args: Tuple[Path, Path, int]) -> Tuple[bool, Optional[Dict]]:
         return False, None
 
 
-def main(base_data_dir: str, files_per_folder: int = 1000, num_cpus: int = 8) -> None:
+def main(base_data_dir: str = DATA_DIR, files_per_folder: int = 1000, num_cpus: int = 8) -> None:
     """Process structure files: unzip, organize into folders, and analyze.
 
     Args:
@@ -238,7 +238,7 @@ def main(base_data_dir: str, files_per_folder: int = 1000, num_cpus: int = 8) ->
         raise FileNotFoundError(f"Directory not found: {base_data_dir}")
 
     # Get all structure files
-    structure_files = get_structure_files(base_data_dir / "cif_zipped")
+    structure_files = get_structure_files(base_data_dir / "raw" / "cif_zipped")
     all_files = structure_files["pdb"] + structure_files["cif"]
     total_files = len(all_files)
 
@@ -273,9 +273,7 @@ def main(base_data_dir: str, files_per_folder: int = 1000, num_cpus: int = 8) ->
                 if result["num_chains"] > 0 and result["total_residues"] > 0:
                     results.append(result)
                 else:
-                    print(
-                        f"Warning: Skipping {result['pdb_id']} due to 0 chains or residues"
-                    )
+                    print(f"Warning: Skipping {result['pdb_id']} due to 0 chains or residues")
             else:
                 failed_files.append(str(tasks[len(results) + len(failed_files)][0]))
 

@@ -42,6 +42,7 @@ proteinseq_toks = {
     ]
 }
 
+
 class Alphabet(object):
     def __init__(
         self,

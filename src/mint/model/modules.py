@@ -76,7 +76,6 @@ try:
                 with torch.cuda.device(x.device):
                     return super().forward(x)
 
-
 except ImportError:
     from torch.nn import LayerNorm as ESM1bLayerNorm
 
@@ -251,9 +250,7 @@ class ContactPredictionHead(nn.Module):
 
 
 class MINTContactHead(nn.Module):
-
     def __init__(self, esm2_output_dim: int):
-
         super().__init__()
 
         self.linear_in = nn.Linear(esm2_output_dim, esm2_output_dim)

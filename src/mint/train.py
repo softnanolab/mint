@@ -27,6 +27,7 @@ load_dotenv(find_dotenv())
 # Register the 'now' resolver to save hydra logs indexed by datetime in the experiment_dir
 OmegaConf.register_new_resolver("now", lambda pattern: datetime.datetime.now().strftime(pattern))
 
+
 def upgrade_state_dict(state_dict):
     """Removes prefixes 'model.encoder.sentence_encoder.' and 'model.encoder.'."""
     prefixes = ["encoder.sentence_encoder.", "encoder."]
@@ -37,7 +38,6 @@ def upgrade_state_dict(state_dict):
 
 @hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="main")
 def main(cfg: DictConfig):
-
     # Set matmul precision
     if cfg.meta.matmul_precision is not None:
         torch.set_float32_matmul_precision(cfg.meta.matmul_precision)

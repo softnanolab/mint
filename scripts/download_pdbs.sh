@@ -3,6 +3,12 @@
 # Script to download files from RCSB http file download services.
 # Use the -h switch to get help on usage.
 
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    echo "Loading DATA_DIR from the .env file"
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # Check for curl or wget
 if command -v curl &> /dev/null; then
     DOWNLOAD_CMD="curl"
@@ -20,11 +26,11 @@ BASE_URL="https://files.rcsb.org/download"
 
 usage() {
   cat << EOF >&2
-Usage: $PROGNAME [-f <file>] -o <BASE_DATA_DIR> [-n <cpus>] [-c] [-p] [-a] [-A] [-x] [-s] [-m] [-r]
+Usage: $PROGNAME [-f <file>] [-o <BASE_DATA_DIR>] [-n <cpus>] [-c] [-p] [-a] [-A] [-x] [-s] [-m] [-r]
 
- -o  <BASE_DATA_DIR>: the base data directory (required)
+ -o  <BASE_DATA_DIR>: the base data directory (optional, defaults to DATA_DIR from .env file)
  -f  <file>: Overrides the input file containing a comma-separated list of PDB ids
-             (default: BASE_DATA_DIR/pdb_ids.txt)
+             (default: BASE_DATA_DIR/raw/pdb_ids.txt)
  -n  <cpus>: number of CPUs to use for parallel downloads, default: 16
  -c       : download a cif.gz file for each PDB id
  -p       : download a pdb.gz file for each PDB id (not available for large structures)
@@ -73,8 +79,7 @@ while getopts f:o:n:cpaAxsmr o
 do
   case $o in
     (f) listfile=$OPTARG;;
-    (o) base_dir=$OPTARG
-        outdir="$OPTARG/cif_zipped";;
+    (o) base_dir=$OPTARG;;
     (n) num_cpus=$OPTARG;;
     (c) cif=true;;
     (p) pdb=true;;
@@ -89,16 +94,24 @@ do
 done
 shift "$((OPTIND - 1))"
 
-# Check if base directory is provided
+# If no base directory provided, try to use DATA_DIR from environment
 if [ -z "$base_dir" ]; then
-    echo "Error: Parameter -o (BASE_DATA_DIR) must be provided"
-    usage
-    exit 1
+    if [ -n "$DATA_DIR" ]; then
+        base_dir="$DATA_DIR"
+        echo "Using DATA_DIR from the .env file: $base_dir"
+    else
+        echo "Error: Parameter -o (BASE_DATA_DIR) must be provided or DATA_DIR must be set in .env file"
+        usage
+        exit 1
+    fi
 fi
+
+# Set output directory
+outdir="$base_dir/raw/cif_zipped"
 
 # If no listfile specified, use default path
 if [ -z "$listfile" ]; then
-    listfile="$base_dir/pdb_ids.txt"
+    listfile="$base_dir/raw/pdb_ids.txt"
 fi
 
 # Check if listfile exists
