@@ -22,6 +22,7 @@ venv/
 .idea/
 *.swp
 *.swo
+*.code-workspace
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
@@ -37,8 +38,8 @@ dist/
 .coverage
 .pytest_cache/
 
+# Custom
 test.ipynb
-
 *.ckpt
 *.pt
 resources/
