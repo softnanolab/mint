@@ -73,7 +73,7 @@ class ESM2(nn.Module):
         self,
         tokens,
         chain_ids=None,
-        repr_layers=[],
+        repr_layers=None,
         need_head_weights=False,
         return_contacts=False,
     ):
@@ -100,7 +100,11 @@ class ESM2(nn.Module):
         if padding_mask is not None:
             x = x * (1 - padding_mask.unsqueeze(-1).type_as(x))
 
-        repr_layers = set(repr_layers)
+        # If no layers are specified, return the final layer's representation by default
+        if repr_layers is None or len(repr_layers) == 0:
+            repr_layers = {self.num_layers}
+        else:
+            repr_layers = set(repr_layers)
         hidden_representations = {}
         if 0 in repr_layers:
             hidden_representations[0] = x

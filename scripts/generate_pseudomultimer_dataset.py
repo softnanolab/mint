@@ -202,7 +202,7 @@ def build_dataset(pdb_features: List[Dict], cath_data_path=CATH_JSON):
     total_entries = sum(len(chains) for chains in cath_data.values())
 
     with tqdm(total=total_entries, desc="Processing CATH entries") as pbar:
-        for pdb_id, chains in islice(cath_data.items(), 100):
+        for pdb_id, chains in islice(cath_data.items(), 1000):
             for chain_id, domains in chains.items():
                 pbar.update(1)
 
@@ -257,7 +257,7 @@ def build_dataset(pdb_features: List[Dict], cath_data_path=CATH_JSON):
                     domain_ids.append(dom_id)
 
                 # find the contact mask for this chain (pseudochains are domains)
-                contact_mask = get_contact_mask(domain_coords, cutoff=5.0)
+                contact_mask = get_contact_mask(domain_coords, cutoff=8.0)
                 chain_id = f"{pdb_id}_{chain_id}"
                 contact_masks[chain_id] = contact_mask
 

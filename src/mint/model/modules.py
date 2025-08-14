@@ -256,9 +256,13 @@ class MINTContactHead(nn.Module):
 
         super().__init__()
 
-        self.linear_in = nn.Linear(esm2_output_dim, esm2_output_dim)
+        self.linear_in = nn.Linear(
+            esm2_output_dim, esm2_output_dim
+        )  # (B x L x L x E) x (E x E) = (B x L x L x E)
         self.head_gelu = nn.GELU()
-        self.linear_out = nn.Linear(esm2_output_dim, 2)
+        self.linear_out = nn.Linear(
+            esm2_output_dim, 1
+        )  # (B x L x l x E) x (E x 1) = (B x L x L x 1)
 
     def forward(self, x):
-        return self.linear_out(self.head_gelu(self.linear_in(x)))
+        return self.linear_out(self.head_gelu(self.linear_in(x))).squeeze(-1)  # (B x L x L)

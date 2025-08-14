@@ -49,6 +49,7 @@ class MINT(pl.LightningModule):
         # predictions and the true token for these 15% of amino acid tokens.
 
         tokens, chain_ids, contact_masks = batch
+        # Build MLM mask (exclude CLS/EOS/PAD from potential masking)
         mask = (
             (~tokens.eq(self.model.cls_idx))
             & (~tokens.eq(self.model.eos_idx))
@@ -56,6 +57,7 @@ class MINT(pl.LightningModule):
         )
         mask = (torch.rand(tokens.shape, device=tokens.device) < 0.15) & mask
 
+        # Prepare masked input
         rand = torch.rand(tokens.shape, device=tokens.device)
         randaa = torch.randint(4, 24, tokens.shape, device=tokens.device)
 
@@ -63,52 +65,69 @@ class MINT(pl.LightningModule):
         inp = torch.where((rand < 0.8) & mask, self.model.mask_idx, inp)
         inp = torch.where((rand > 0.9) & mask, randaa, inp)
 
-        out_mlm = self.model(inp, chain_ids)["logits"]
+        # Single forward pass to get logits and representations
+        model_out = self.model(inp, chain_ids)
 
-        loss_mlm = torch.nn.functional.cross_entropy(
-            out_mlm.transpose(1, 2), tokens, reduction="none"
+        # Get final-layer embeddings (B x L x E) without hardcoding the layer index
+        final_reps = model_out["representations"][self.model.num_layers]
+
+        # Mask out embeddings that relate to special tokens: CLS, EOS, PAD
+        special_mask = (
+            (tokens == self.model.cls_idx)
+            | (tokens == self.model.eos_idx)
+            | (tokens == self.model.padding_idx)
+        )  # (B x L)
+        # Optionally also exclude masked MLM tokens by uncommenting the next line
+        # special_mask = special_mask | (tokens == self.model.mask_idx)
+
+        # Zero out the special-token positions while keeping the (B x L x E) shape
+        final_reps = final_reps.masked_fill(special_mask.unsqueeze(-1), 0.0)
+
+        # Compact valid (non-special) tokens per sequence.
+        valid_mask = ~special_mask  # (B x L)
+        B, L, E = final_reps.shape
+        if B == 1:
+            # No padding: (1 x N_valid x E)
+            filtered_reps = final_reps[0, valid_mask[0]].unsqueeze(0)
+        else:
+            # Padded compaction: (B x N_valid_max x E)
+            lengths = valid_mask.sum(dim=1)  # (B)
+            max_len = lengths.max().clamp_min(1)
+            sort_idx = torch.argsort(valid_mask.int(), dim=1, descending=True)  # (B x L)
+            gathered = torch.gather(
+                final_reps, 1, sort_idx.unsqueeze(-1).expand(-1, -1, E)
+            )  # (B x L x E)
+            filtered_reps = gathered[:, : max_len.item(), :]
+
+        # Build pairwise tensor: (B x N_valid x N_valid x E) where final[:, i, j, :] = filtered[:, i, :]
+        N_valid = filtered_reps.size(1)
+        pair_reps = filtered_reps.unsqueeze(2).repeat(1, 1, N_valid, 1)
+
+        # Feed pair_reps into the contact head
+        predicted_contact_masks = self.contact_head.forward(pair_reps)
+
+        # Compute the Binary Cross Entropy Loss for the predicted contacts
+        # Build mask of valid entries (not ignored)
+        valid_entries = contact_masks != -1
+
+        # Compute BCE loss per element (no reduction)
+        loss_per_elem = F.binary_cross_entropy_with_logits(
+            predicted_contact_masks, contact_masks, reduction="none"
         )
+
+        # Apply mask and normalize
+        loss_contact_head = (loss_per_elem * valid_entries).sum() / (valid_entries.sum())
+
+        # Compute MLM loss
+        logits = model_out["logits"]
+        loss_mlm = F.cross_entropy(logits.transpose(1, 2), tokens, reduction="none")
         loss_mlm = (loss_mlm * mask).sum() / mask.sum()
 
-        # 1) token-level validity (exclude CLS, EOS, PAD)
-        valid_tok = (
-            (tokens != self.model.cls_idx)
-            & (tokens != self.model.eos_idx)
-            & (tokens != self.model.padding_idx)
-        )
+        # Compute the averaged loss for both the MLM and Supervised Contact Mask Prediction Task
+        loss = loss_mlm + loss_contact_head
 
-        out_mlm = out_mlm * valid_tok.unsqueeze(-1)
-
-        out_contact_head = self.model.contact_head(out_mlm)
-
-        # Pairwise valid mask (drop any pair touching an invalid token)
-        pair_valid = valid_tok[:, :, None] & valid_tok[:, None, :]  # (B, L, L)
-
-        # Contact loss (binary contact example)
-        # If your labels use -1 to denote "ignore", incorporate that too.
-        # Convert your batch masks (likely a list of np.ndarrays) into a tensor:
-        if isinstance(contact_masks, (list, tuple)):
-            targets = torch.stack(
-                [torch.as_tensor(m, device=tokens.device) for m in contact_masks], dim=0
-            )  # (B, L, L)
-        else:
-            targets = contact_masks.to(tokens.device)
-
-        # optional: exclude label==-1 cells (e.g., intra-chain) from the loss
-        label_valid = targets != -1
-        use = pair_valid & label_valid
-
-        loss_contact = F.binary_cross_entropy_with_logits(
-            out_contact_head[use],
-            contact_masks[use],
-        )
-
-        loss = loss_mlm + loss_contact
-
-        # self.log("tokens", mask.sum())
-        # self.log("loss", loss)
-        # self.log("perplexity", torch.exp(loss))
-        return loss, out_mlm
+        # Return loss and pairwise embeddings (B x L x L x E)
+        return loss, filtered_reps
 
     def configure_optimizers(self):
         # For model training optimization, we used Adam with 𝛽𝛽1 = 0.9, 𝛽𝛽2 = 0.98, 𝜖𝜖 = 10−8 and 𝐿𝐿2 weight decay of

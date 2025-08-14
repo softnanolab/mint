@@ -6,6 +6,7 @@ import torch
 from Bio import SeqIO
 import lightning as pl
 from omegaconf import DictConfig
+import numpy as np
 
 from mint.data.esm import Alphabet
 
@@ -22,6 +23,7 @@ class CollateFn:
         chain_ids = [torch.ones(c.shape, dtype=torch.int32) * i for i, c in enumerate(chains)]
         chains = torch.cat(chains, -1)
         chain_ids = torch.cat(chain_ids, -1)
+        contact_masks = torch.as_tensor(np.array(contact_masks), dtype=torch.float32)
         return chains, chain_ids, contact_masks
 
     def convert(self, seq_str_list):
@@ -318,13 +320,13 @@ class PseudoMMDataModule(pl.LightningDataModule):
         self.config = config
 
         self.train_dataset = PseudoMMDataset(
-            links_path=self.config.train.links_path,
-            seqs_path=self.config.train.seqs_path,
-            contact_masks_path=self.config.contact_masks_path,
-            concat=self.config.train.concat,
-            max_examples=self.config.train.max_examples,
-            max_len=self.config.train.max_len,
-            overfit=self.config.train.overfit,
+            links_path=self.config.data.train.links_path,
+            seqs_path=self.config.data.train.seqs_path,
+            contact_masks_path=self.config.data.train.contact_masks_path,
+            concat=self.config.data.train.concat,
+            max_examples=self.config.data.train.max_examples,
+            max_len=self.config.data.train.max_len,
+            overfit=self.config.data.train.overfit,
         )
 
         # TODO: add val dataset
@@ -339,11 +341,11 @@ class PseudoMMDataModule(pl.LightningDataModule):
 
         return torch.utils.data.DataLoader(
             self.train_dataset,
-            batch_size=self.config.train.batch_size,
-            shuffle=self.config.train.shuffle,
-            num_workers=self.config.train.num_workers,
-            collate_fn=CollateFn(self.config.train.max_len),
-            pin_memory=self.config.train.pin_memory,
+            batch_size=self.config.data.train.batch_size,
+            shuffle=self.config.data.train.shuffle,
+            num_workers=self.config.data.train.num_workers,
+            collate_fn=CollateFn(self.config.data.train.max_len),
+            pin_memory=self.config.data.train.pin_memory,
         )
 
     def val_dataloader(self):
@@ -351,11 +353,11 @@ class PseudoMMDataModule(pl.LightningDataModule):
         # TODO: add val dataset
         return torch.utils.data.DataLoader(
             self.train_dataset,
-            batch_size=self.config.train.batch_size,
-            shuffle=self.config.train.shuffle,
-            num_workers=self.config.train.num_workers,
-            collate_fn=CollateFn(self.config.train.max_len),
-            pin_memory=self.config.train.pin_memory,
+            batch_size=self.config.data.train.batch_size,
+            shuffle=self.config.data.train.shuffle,
+            num_workers=self.config.data.train.num_workers,
+            collate_fn=CollateFn(self.config.data.train.max_len),
+            pin_memory=self.config.data.train.pin_memory,
         )
 
 
