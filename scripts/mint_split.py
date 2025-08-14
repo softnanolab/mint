@@ -8,6 +8,8 @@ import tempfile
 from pathlib import Path
 from random import Random
 
+# ---------- Utilities ----------
+
 def install_mmseqs():
     print("[i] MMseqs2 not found — attempting to install...")
     try:
@@ -40,6 +42,9 @@ def detect_real_cpu_count():
         return int(sp.check_output(["nproc"]).strip())
     except Exception:
         return os.cpu_count() or 1
+
+def run(cmd):
+    sp.run(cmd, check=True)
 
 def normalize_to_oneline_fasta(src: Path, dst: Path):
     first_line = ""
@@ -90,18 +95,15 @@ def fasta_to_dict(fasta_path: Path) -> dict:
                 out[cur] += re.sub(r"[ \t]", "", line)
     return out
 
-def run(cmd):
-    sp.run(cmd, check=True)
+# ---------- Main ----------
 
 def main():
-    # === Interactive inputs ===
     seqs_path = Path(input("Path to sequences file (e.g., training.seqs.txt): ").strip())
     links_path = Path(input("Path to links file (e.g., training.links.txt): ").strip())
     split_ratio = float(input(
-        "What fraction of sequences with >40% similarity should go into training set? (default 0.9): "
+        "What fraction of CLUSTERS (≥40% similar sequences) should go into the training set? (default 0.9): "
     ) or "0.9")
 
-    # === Fixed settings ===
     threads = detect_real_cpu_count()
     out_train_seqs = Path("train.seqs.txt")
     out_val_seqs   = Path("val.seqs.txt")
@@ -116,20 +118,19 @@ def main():
         sys.exit(f"Missing links file: {links_path}")
 
     mmseqs_bin = find_mmseqs()
-
     workdir = Path(tempfile.mkdtemp(prefix="mint_split_tmp_"))
     tmpdir = workdir / "mmseqs_tmp"
     tmpdir.mkdir(exist_ok=True)
 
     try:
-        fa = workdir / "training.seqs.fasta"
         print("[0/8] Normalizing input → one-line FASTA")
+        fa = workdir / "training.seqs.fasta"
         normalize_to_oneline_fasta(seqs_path, fa)
 
-        print("[1/8] mmseqs createdb")
+        print(f"[1/8] mmseqs createdb (threads auto={threads})")
         run([mmseqs_bin, "createdb", str(fa), str(workdir / "seqDB")])
 
-        print("[2/8] mmseqs linclust (40% id)")
+        print("[2/8] mmseqs linclust (≥40% identity)")
         run([
             mmseqs_bin, "linclust", str(workdir / "seqDB"), str(workdir / "clu40"),
             str(tmpdir), "--min-seq-id", "0.4", "--cov-mode", "1", "-c", "0.8",
@@ -141,25 +142,39 @@ def main():
         run([mmseqs_bin, "createtsv", str(workdir / "seqDB"), str(workdir / "seqDB"),
              str(workdir / "clu40"), str(clu_tsv)])
 
-        # === Keep clusters intact ===
-        reps = sorted({line.split("\t")[0] for line in clu_tsv.open() if line.strip()})
+        cluster_sizes = {}
+        with clu_tsv.open() as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                rep, member = line.strip().split("\t")[:2]
+                cluster_sizes.setdefault(rep, 0)
+                cluster_sizes[rep] += 1
+
+        num_clusters = len(cluster_sizes)
+
+        print("[4/8] Splitting by clusters")
+        reps = sorted(cluster_sizes.keys())
         rng = Random(seed)
         rng.shuffle(reps)
-
-        n_train = max(1, min(len(reps)-1, int(len(reps) * split_ratio)))
+        n_train = max(1, min(len(reps) - 1, int(len(reps) * split_ratio)))
         reps_train, reps_val = set(reps[:n_train]), set(reps[n_train:])
 
         train_ids, val_ids = set(), set()
-        for line in clu_tsv.open():
-            r, m = line.strip().split("\t")[:2]
-            if r in reps_train:
-                train_ids.add(m)
-            elif r in reps_val:
-                val_ids.add(m)
+        with clu_tsv.open() as f:
+            for line in f:
+                r, m = line.strip().split("\t")[:2]
+                if r in reps_train:
+                    train_ids.add(m)
+                elif r in reps_val:
+                    val_ids.add(m)
 
+        print("[5/8] Verifying disjoint ID sets")
         if train_ids & val_ids:
-            sys.exit("Train/Val ID overlap detected.")
+            overlap = list(train_ids & val_ids)[:3]
+            sys.exit(f"Train/Val ID overlap detected (e.g., {overlap}).")
 
+        print("[6/8] Writing train/val sequences (ID<TAB>SEQ)")
         seq_dict = fasta_to_dict(fa)
         with out_train_seqs.open("w") as ftr:
             for pid in sorted(train_ids):
@@ -170,26 +185,34 @@ def main():
                 if pid in seq_dict:
                     fvr.write(f"{pid}\t{seq_dict[pid]}\n")
 
-        def write_links(keep_ids, out_path):
+        print("[7/8] Splitting links (intra-split only)")
+        def write_links(keep_ids: set, out_path: Path):
             with links_path.open() as fin, out_path.open("w") as fout:
                 for line in fin:
                     s = line.strip()
-                    if not s or s.startswith("#"): 
+                    if not s or s.startswith("#"):
                         continue
                     a, b, *_ = re.split(r"[ \t]+", s)
                     if a in keep_ids and b in keep_ids:
                         fout.write(f"{a}\t{b}\n")
-
         write_links(train_ids, out_train_links)
         write_links(val_ids, out_val_links)
 
+        train_seq_count = sum(1 for _ in out_train_seqs.open())
+        val_seq_count   = sum(1 for _ in out_val_seqs.open())
+        train_link_count = sum(1 for _ in out_train_links.open())
+        val_link_count   = sum(1 for _ in out_val_links.open())
+
         print("[8/8] Done.")
-        print(f"Train: {len(train_ids)} seqs, Val: {len(val_ids)} seqs")
+        print(f"  Train: {train_seq_count} seqs, {train_link_count} links")
+        print(f"  Val  : {val_seq_count} seqs, {val_link_count} links")
+        print(f"  Total clusters formed (≥40% identity): {num_clusters}")
+
     finally:
-        if keep_temp:
-            print(f"[i] Temp preserved at: {workdir}")
-        else:
+        if not keep_temp:
             shutil.rmtree(workdir, ignore_errors=True)
+        else:
+            print(f"[i] Temp preserved at: {workdir}")
 
 if __name__ == "__main__":
     main()
