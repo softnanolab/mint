@@ -1,21 +1,31 @@
-from mint.utils.parsing import parse_train_args
-
-args = parse_train_args()
-
-import argparse
-import json
 import re
+from pathlib import Path
+import datetime
+import os
+from dotenv import load_dotenv, find_dotenv
 
+
+import hydra
+from omegaconf import DictConfig, OmegaConf, ListConfig
 import lightning as pl
 import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.strategies import DDPStrategy
+from lightning.pytorch.utilities import rank_zero_only
 
-from mint.utils.dataset import CollateFn, STRINGDataset
-from mint.utils.wrapper import ESMWrapper
+from mint.data.mint import PseduoMMDataModule
+from mint.model.mint import MINT
 
-torch.set_float32_matmul_precision("medium")
+MINT_PATH = Path(__file__).parent
+CONFIG_PATH = str(MINT_PATH / "configs")
 
+# Load environment variables from .env file
+load_dotenv(find_dotenv())
+
+
+# Register the 'now' resolver to save hydra logs indexed by datetime in the experiment_dir
+OmegaConf.register_new_resolver("now", lambda pattern: datetime.datetime.now().strftime(pattern))
 
 def upgrade_state_dict(state_dict):
     """Removes prefixes 'model.encoder.sentence_encoder.' and 'model.encoder.'."""
@@ -25,100 +35,66 @@ def upgrade_state_dict(state_dict):
     return state_dict
 
 
-trainer = pl.Trainer(
-    default_root_dir=f"./checkpoints/{args.run_name}",
-    accelerator="gpu",
-    devices=[0, 1, 2, 3, 4, 5, 6, 7],
-    max_steps=args.max_steps,
-    num_sanity_val_steps=2,
-    enable_progress_bar=not args.wandb,
-    gradient_clip_val=args.grad_clip,
-    enable_checkpointing=True,
-    callbacks=[ModelCheckpoint(dirpath=f"./checkpoints/{args.run_name}", save_top_k=-1,)],
-    accumulate_grad_batches=args.accumulate_grad,
-    val_check_interval=args.val_check_interval,
-    strategy=DDPStrategy(find_unused_parameters=True)
-    if args.freeze_self_attn
-    else "ddp_find_unused_parameters_false",
-)
+@hydra.main(version_base=None, config_path=CONFIG_PATH, config_name="main")
+def main(cfg: DictConfig):
 
-if args.dataset_split in ["filtered", "full"]:
-    val_links_file = "../validation.links.txt.gz"
-    val_seqs_file = "../validation.seqs.txt.gz"
-    if args.dataset_split == "filtered":
-        train_links_file = "../training_filtered.links.txt.gz"
-        train_seqs_file = "../training_filtered.seqs.txt.gz"
-    else:
-        pass
-elif args.dataset_split == "filtered_50":
-    val_links_file = "../validation.links.50.txt.gz"
-    val_seqs_file = "../validation.seqs.50.txt.gz"
-    train_links_file = "../training.links.50.txt.gz"
-    train_seqs_file = "../training.seqs.50.txt.gz"
+    # Set matmul precision
+    if cfg.meta.matmul_precision is not None:
+        torch.set_float32_matmul_precision(cfg.meta.matmul_precision)
 
-val_ds = STRINGDataset(
-    val_links_file,
-    val_seqs_file,
-    global_rank=trainer.global_rank,
-    world_size=trainer.world_size,
-    max_examples=args.val_examples,
-    concat=args.concat,
-    max_len=args.val_max_len,
-)
+    # load model and data module
+    model = MINT(cfg)
+    data_module = PseduoMMDataModule(cfg.data)
 
-val_loader = torch.utils.data.DataLoader(
-    val_ds, batch_size=args.batch_size, collate_fn=CollateFn(args.crop_length)
-)
+    # Set up trainer
+    strategy = "auto"
+    if (isinstance(cfg.trainer.devices, int) and cfg.trainer.devices > 1) or (
+        isinstance(cfg.trainer.devices, (list, ListConfig)) and len(cfg.trainer.devices) > 1
+    ):
+        strategy = DDPStrategy(find_unused_parameters=True)
 
-train_ds = STRINGDataset(
-    train_links_file,
-    train_seqs_file,
-    global_rank=trainer.global_rank,
-    world_size=trainer.world_size,
-    concat=args.concat,
-    overfit=args.overfit,
-    seek=args.dataset_seek,
-)
-train_loader = torch.utils.data.DataLoader(
-    train_ds, batch_size=args.batch_size, collate_fn=CollateFn(args.crop_length)
-)
+    loggers = []
+    wdb_logger = WandbLogger(
+        name=cfg.wandb.name,
+        group=cfg.wandb.name,
+        save_dir=cfg.meta.experiment_dir,
+        project=cfg.wandb.project,
+        entity=cfg.wandb.entity,
+        log_model=False,
+    )
+    loggers.append(wdb_logger)
+    # Save the config to wandb
 
-model_name = {
-    "8M": "esm2_t6_8M_UR50D",
-    "35M": "esm2_t12_35M_UR50D",
-    "150M": "esm2_t30_150M_UR50D",
-    "650M": "esm2_t33_650M_UR50D",
-    "3B": "esm2_t36_3B_UR50D",
-    "15B": "esm2_t48_15B_UR50D",
-}[args.model]
+    @rank_zero_only
+    def save_config_to_wandb() -> None:
+        config_out = Path(wdb_logger.experiment.dir) / "run.yaml"
+        with Path.open(config_out, "w") as f:
+            OmegaConf.save(cfg, f)
+        wdb_logger.experiment.save(str(config_out))
 
-cfg = argparse.Namespace()
-with open(f"models/{model_name}.json") as f:
-    cfg.__dict__.update(json.load(f))
+    save_config_to_wandb()
 
-model = ESMWrapper(cfg, args)
+    # load the trainer first
+    trainer = pl.Trainer(
+        default_root_dir=cfg.meta.experiment_dir,
+        strategy=strategy,
+        num_sanity_val_steps=2,
+        enable_progress_bar=True,
+        enable_checkpointing=True,
+        callbacks=[
+            # TODO: add monitor, save_every_n_train_steps, mode
+            ModelCheckpoint(
+                save_top_k=cfg.meta.save_top_k,
+                save_last=True,
+                every_n_epochs=1,
+            )
+        ],
+        logger=loggers,
+        **cfg.trainer,
+    )
 
-if not (args.ckpt or args.reinitialize):
-    state_dict = torch.load(f"models/{model_name}.pt")["model"]
-    model.model.load_state_dict(upgrade_state_dict(state_dict), strict=False)
+    trainer.fit(model=model, datamodule=data_module, ckpt_path=cfg.meta.resume)
 
-if (not args.no_multimer) and args.copy_weights:
-    for layer in model.model.layers:
-        layer.multimer_attn.load_state_dict(layer.self_attn.state_dict(), strict=False)
 
-if args.validate:
-    if args.ckpt:
-        ckpt = torch.load(args.ckpt)
-        model.load_state_dict(ckpt["state_dict"], strict=False)
-    trainer.validate(model, val_loader)
-else:
-    trainer.fit(model, train_loader, val_loader, ckpt_path=args.ckpt)
-
-# reinit
-# python train.py --batch_size 2 --crop_len 512 --model 650M --val_check_interval 320000 --reinitialize --accumulate_grad 32 --run_name 650M_reinit_filtered --wandb --dataset_split filtered
-
-# freeze
-# python train.py --batch_size 2 --crop_len 512 --model 650M --val_check_interval 320000 --copy_weights --accumulate_grad 32 --freeze_self_attn --run_name 650M_freeze_filtered --wandb --dataset_split filtered
-
-# nofreeze
-# python train.py --batch_size 2 --crop_len 512 --model 650M --val_check_interval 320000 --accumulate_grad 32 --run_name 650M_nofreeze_filtered --copy_weights --wandb --dataset_split filtered
+if __name__ == "__main__":
+    main()

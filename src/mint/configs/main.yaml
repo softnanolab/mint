@@ -1,0 +1,66 @@
+meta:
+  code_base_dir: ${oc.env:CODE_BASE_DIR}
+  data_dir: ${oc.env:DATA_DIR}
+  experiment_name: mint_test_run
+  experiment_dir: "${meta.code_base_dir}/outputs/${meta.experiment_name}"
+  matmul_precision: "medium"
+  pretrained: null
+  resume: null
+  disable_checkpoint: false
+  save_top_k: -1
+
+mint:
+  esm2:
+    encoder_layers: 33
+    encoder_embed_dim: 1280
+    encoder_attention_heads: 16
+    token_dropout: 0.1
+    use_multimer: true
+  
+training_args:
+  freeze_self_attn: false
+  lr: 1e-4
+  adam_betas: [0.9, 0.98]
+  adam_eps: 1e-8
+  weight_decay: 0.01
+  warmup_updates: 2000
+  end_learning_rate: 1e-5
+  total_num_update: 100000
+
+trainer:
+  accelerator: gpu
+  devices: 1
+  precision: 32
+  gradient_clip_val: 10.0
+  max_epochs: -1
+  log_every_n_steps: 5
+  accumulate_grad_batches: 1 
+  val_check_interval: 0.0
+  limit_val_batches: 0
+
+data:
+  train:
+    links_path: "${meta.data_dir}/training.links.txt.gz"
+    seqs_path: "${meta.data_dir}/training.seqs.txt.gz"
+    concat: false
+    batch_size: 1
+    max_examples: null
+    max_len: 512
+    shuffle: true
+    num_workers: 4
+    pin_memory: true
+    overfit: false
+    # TODO: ensure you don't need these
+    # global_rank: 0
+    # world_size: 1
+    # seek: null
+
+wandb:
+  name: null
+  project: "${meta.experiment_name}"
+  entity: ${oc.env:WANDB_ENTITY}
+
+# hydra run directory
+hydra:
+  run:
+    dir: "${meta.experiment_dir}/hydra_logs/${now:%Y-%m-%d_%H-%M-%S}"

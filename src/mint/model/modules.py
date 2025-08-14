@@ -248,3 +248,17 @@ class ContactPredictionHead(nn.Module):
         attentions = apc(symmetrize(attentions))
         attentions = attentions.permute(0, 2, 3, 1)
         return self.activation(self.regression(attentions).squeeze(3))
+
+
+class MINTContactHead(nn.Module):
+
+    def __init__(self, esm2_output_dim: int):
+
+        super().__init__()
+
+        self.linear_in = nn.Linear(esm2_output_dim, esm2_output_dim)
+        self.head_gelu = nn.GELU()
+        self.linear_out = nn.Linear(esm2_output_dim, 2)
+
+    def forward(self, x):
+        return self.linear_out(self.head_gelu(self.linear_in(x)))
